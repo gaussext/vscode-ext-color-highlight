@@ -15,8 +15,9 @@ VS Code 颜色高亮插件，支持全局变量
 ## Features
 
 - [x] 支持全局的 CSS 变量
+- [x] 支持递归的 CSS 变量 
 - [x] 支持全局的 SASS 变量
-- [ ] 支持全局的 LESS 变量
+- [x] 支持全局的 LESS 变量
 
 ## Build
 

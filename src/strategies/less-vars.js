@@ -2,6 +2,7 @@ import { findHexRGBA } from './hex';
 import { findWords } from './words';
 import { findColorFunctionsInText, sortStringsInDescendingOrder } from './functions';
 import { findHwb } from './hwb';
+import { loadGlobalVariables } from '../lib/global-importer';
 
 const setVariable = /^\s*\@([-\w]+)\s*:\s*(.*)$/gm;
 
@@ -14,8 +15,11 @@ const setVariable = /^\s*\@([-\w]+)\s*:\s*(.*)$/gm;
  *  color: string
  * }}
  */
-export async function findLessVars(text) {
-  let match = setVariable.exec(text);
+export async function findLessVars(text, importerOptions) {
+  const injectContent = loadGlobalVariables(importerOptions);
+  const fullText = `${injectContent}
+  ${text}`;
+  let match = setVariable.exec(fullText);
   let result = [];
 
   const varColor = {};

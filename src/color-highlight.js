@@ -90,7 +90,13 @@ export class DocumentHighlight {
         }));
         break;
       case 'less':
-        this.strategies.push(findLessVars);
+        this.strategies.push(text => findLessVars(text, {
+          data: text,
+          cwd: dirname(document.uri.fsPath),
+          extensions: ['.less'],
+          includePaths: viewConfig.less.includePaths || [],
+          globalPaths: viewConfig.less.globalPaths
+        }));
         break;
       case 'stylus':
         this.strategies.push(findStylVars);
@@ -110,7 +116,13 @@ export class DocumentHighlight {
           cwd: dirname(document.uri.fsPath),
           globalPaths: viewConfig.css.globalPaths
         }));
-        this.strategies.push(findLessVars);
+        this.strategies.push(text => findLessVars(text, {
+          data: text,
+          cwd: dirname(document.uri.fsPath),
+          extensions: ['.less'],
+          includePaths: viewConfig.less.includePaths || [],
+          globalPaths: viewConfig.less.globalPaths
+        }));
         this.strategies.push(findStylVars);
         this.strategies.push(text => findScssVars(text, {
           data: text,
