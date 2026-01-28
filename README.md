@@ -23,6 +23,6 @@ VS Code 颜色高亮插件，支持全局变量
 
 ```bash
 npm i
-npm run vsce
+npm run package
 code --install-extension your-extension.vsix
 ```
