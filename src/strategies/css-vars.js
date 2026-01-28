@@ -7,6 +7,26 @@ import { loadGlobalVariables } from '../lib/global-importer';
 const setVariable = /^\s*(--[-\w]+)\s*:\s*(.*)$/gm;
 
 /**
+ * Recursively finds CSS variable values.
+ * @param {*} text 
+ * @param {*} varColor 
+ * @param {*} depth 
+ * @returns 
+ */
+function findVar(text, varColor, depth = 0) {
+  const varRegex = /var\((--[-\w]+)\)/g;
+  const match = varRegex.exec(text);
+  if (match !== null) {
+    const varName = match[1];
+    if (varColor[varName]) {
+      return varColor[varName];
+    } else if (depth < 5) {
+      return findVar(varColor[varName], varColor, depth + 1);
+    }
+  }
+}
+
+/**
  * @export
  * @param {string} text
  * @returns {{
@@ -17,8 +37,8 @@ const setVariable = /^\s*(--[-\w]+)\s*:\s*(.*)$/gm;
  */
 export async function findCssVars(text, importerOptions) {
   const injectContent = loadGlobalVariables(importerOptions);
-  const fullText =  `${injectContent}
-${text}`;
+  const fullText = `${injectContent}
+  ${text}`;
   let match = setVariable.exec(fullText);
   let result = [];
 
@@ -40,6 +60,12 @@ ${text}`;
       varColor[name] = values[0].color;
     }
 
+    const v = findVar(value, varColor);
+    if (v) {
+      varNames.push(name);
+      varColor[name] = v;
+    }
+
     match = setVariable.exec(fullText);
   }
 
@@ -49,7 +75,7 @@ ${text}`;
 
   varNames = sortStringsInDescendingOrder(varNames);
 
-  const varNamesRegex = new RegExp(`var\\((${varNames.join('|')})\\)`, 'g');
+  const varNamesRegex = new RegExp(`var\\((${varNames.join("|")})\\)`, "g");
 
   match = varNamesRegex.exec(text);
 
@@ -61,12 +87,11 @@ ${text}`;
     result.push({
       start,
       end,
-      color: varColor[varName]
+      color: varColor[varName],
     });
 
     match = varNamesRegex.exec(text);
   }
-
 
   return result;
 }
