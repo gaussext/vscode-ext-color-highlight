@@ -7,8 +7,9 @@ VS Code 颜色高亮插件，支持全局变量
 ```json
 {    
     "color-highlight.enable": true,
-    "color-highlight.css.globalPaths": ["./variables.css"],
-    "color-highlight.sass.globalPaths": ["./variables.scss"],
+    "color-highlight.css.globalPaths": ["./variables-css.css"],
+    "color-highlight.sass.globalPaths": ["./variables-scss.scss"],
+    "color-highlight.less.globalPaths": ["./variables-less.scss"],
 }
 ```
 
