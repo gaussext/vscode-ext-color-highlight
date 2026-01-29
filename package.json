@@ -104,17 +104,12 @@
           "description": "Highlight colors on the ruler (scroll bar), true/false",
           "type": "boolean"
         },
-        "color-highlight.sass.includePaths": {
+        "color-highlight.includePaths": {
           "default": [],
           "description": "Array of absolute paths to search while perform file lookups.",
           "type": "array"
         },
-        "color-highlight.sass.globalPaths": {
-          "default": [],
-          "description": "Array of absolute paths to search while perform file lookups.",
-          "type": "array"
-        },
-        "color-highlight.css.globalPaths": {
+        "color-highlight.globalPaths": {
           "default": [],
           "description": "Array of absolute paths to search while perform file lookups.",
           "type": "array"

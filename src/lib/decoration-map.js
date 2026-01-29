@@ -3,6 +3,21 @@ import vscode from 'vscode';
 import { getColorContrast } from './dynamic-contrast';
 
 /**
+ * 
+ * @param {string} color 
+ */
+function createDot(color = '') {
+  return {
+    contentText: ' ',
+    margin: '0.1em 0.2em 0',
+    width: '0.8em',
+    height: '0.8em',
+    backgroundColor: color,
+    border: '0.1em solid #fff',
+  };
+}
+
+/**
  *
  * @export
  * @class DecorationMap
@@ -55,26 +70,12 @@ export class DecorationMap {
         case 'dotafter':
         case 'dot-after':
         case 'dot_after':
-          rules.after = {
-            contentText: ' ',
-            margin: '0.1em 0.2em 0 0.2em',
-            width: '0.7em',
-            height: '0.7em',
-            backgroundColor: color,
-            borderRadius: '50%'
-          };
+          rules.after = createDot(color);
           break;
         case 'dotbefore':
         case 'dot-before':
         case 'dot_before':
-          rules.before = {
-            contentText: ' ',
-            margin: '0.1em 0.2em 0 0.2em',
-            width: '0.7em',
-            height: '0.7em',
-            backgroundColor: color,
-            borderRadius: '50%'
-          };
+          rules.before = createDot(color);
           break;
         case 'background':
         default:

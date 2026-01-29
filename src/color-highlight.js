@@ -81,58 +81,25 @@ export class DocumentHighlight {
       if (isValid) this.strategies.push(findHslNoFn);
     }
 
-    
-    switch (document.languageId) {
-      case 'css':
-        this.strategies.push(text => findCssVars(text, {
-          cwd: dirname(document.uri.fsPath),
-          globalPaths: viewConfig.css.globalPaths
-        }));
-        break;
-      case 'less':
-        this.strategies.push(text => findLessVars(text, {
-          data: text,
-          cwd: dirname(document.uri.fsPath),
-          extensions: ['.less'],
-          includePaths: viewConfig.less.includePaths || [],
-          globalPaths: viewConfig.less.globalPaths
-        }));
-        break;
-      case 'stylus':
-        this.strategies.push(findStylVars);
-        break;
-      case 'sass':
-      case 'scss':
-        this.strategies.push(text => findScssVars(text, {
-          data: text,
-          cwd: dirname(document.uri.fsPath),
-          extensions: ['.scss', '.sass'],
-          includePaths: viewConfig.sass.includePaths || [],
-          globalPaths: viewConfig.sass.globalPaths
-        }));
-        break;
-      default:
-        this.strategies.push(text => findCssVars(text, {
-          cwd: dirname(document.uri.fsPath),
-          globalPaths: viewConfig.css.globalPaths
-        }));
-        this.strategies.push(text => findLessVars(text, {
-          data: text,
-          cwd: dirname(document.uri.fsPath),
-          extensions: ['.less'],
-          includePaths: viewConfig.less.includePaths || [],
-          globalPaths: viewConfig.less.globalPaths
-        }));
-        this.strategies.push(findStylVars);
-        this.strategies.push(text => findScssVars(text, {
-          data: text,
-          cwd: dirname(document.uri.fsPath),
-          extensions: ['.scss', '.sass'],
-          includePaths: viewConfig.sass.includePaths || [],
-          globalPaths: viewConfig.sass.globalPaths
-        }));
-        break;
-    }
+    this.strategies.push(text => findCssVars(text, {
+      cwd: dirname(document.uri.fsPath),
+      globalPaths: viewConfig.globalPaths
+    }));
+    this.strategies.push(text => findLessVars(text, {
+      data: text,
+      cwd: dirname(document.uri.fsPath),
+      extensions: ['.less'],
+      includePaths: viewConfig.includePaths || [],
+      globalPaths: viewConfig.globalPaths
+    }));
+    this.strategies.push(text => findScssVars(text, {
+      data: text,
+      cwd: dirname(document.uri.fsPath),
+      extensions: ['.scss', '.sass'],
+      includePaths: viewConfig.includePaths || [],
+      globalPaths: viewConfig.globalPaths
+    }));
+    this.strategies.push(findStylVars);
     this.initialize(viewConfig);
   }
 
