@@ -2,28 +2,14 @@
 
 VS Code 颜色高亮插件，支持全局变量
 
+<img src="./images/1.png" width=360 />
+
 ## Configuration
 
 ```json
-{    
-    "color-highlight.enable": true,
-    "color-highlight.css.globalPaths": ["./variables-css.css"],
-    "color-highlight.sass.globalPaths": ["./variables-scss.scss"],
-    "color-highlight.less.globalPaths": ["./variables-less.scss"],
+{
+  "color-highlight.globalPaths": ["./src/styles/variables-define.scss"],
+  "color-highlight.markerType": "dot-before",
+  "editor.colorDecorators": false
 }
-```
-
-## Features
-
-- [x] 支持全局的 CSS 变量
-- [x] 支持递归的 CSS 变量 
-- [x] 支持全局的 SASS 变量
-- [x] 支持全局的 LESS 变量
-
-## Build
-
-```bash
-npm i
-npm run package
-code --install-extension your-extension.vsix
 ```
