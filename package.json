@@ -2,7 +2,7 @@
   "name": "color-highlight",
   "displayName": "Color Highlight",
   "description": "Highlight web colors in your editor",
-  "version": "2.9.3",
+  "version": "2.9.4",
   "publisher": "gausszhou",
   "license": "GPL-3.0",
   "engines": {
