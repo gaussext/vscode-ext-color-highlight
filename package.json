@@ -27,15 +27,16 @@
     "package": "vsce package"
   },
   "bugs": {
-    "url": "https://github.com/naumovs/vscode-ext-color-highlight/issues"
+    "url": "https://github.com/gaussext/vscode-ext-color-highlight/issues"
   },
-  "homepage": "https://github.com/naumovs/vscode-ext-color-highlight",
+  "homepage": "https://github.com/gaussext/vscode-ext-color-highlight",
   "repository": {
     "type": "git",
-    "url": "https://github.com/naumovs/vscode-ext-color-highlight.git"
+    "url": "https://github.com/gaussext/vscode-ext-color-highlight.git"
   },
   "browser": "./dist/extension-web.js",
   "main": "./dist/extension-node.js",
+  "icon": "./images/preview.png",
   "contributes": {
     "configuration": {
       "title": "Color Highlight",

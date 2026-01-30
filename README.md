@@ -2,7 +2,7 @@
 
 VS Code 颜色高亮插件，支持全局变量
 
-<img src="./images/1.png" width=360 />
+![](./images/preview.png)
 
 ## Configuration
 
