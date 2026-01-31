@@ -24,7 +24,9 @@
     "vscode:prepublish": "webpack --mode production",
     "dev": "webpack --mode development -w",
     "force-resolutions": "npx npm-force-resolutions",
-    "package": "vsce package"
+    "package": "vsce package",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix"
   },
   "bugs": {
     "url": "https://github.com/gaussext/vscode-ext-color-highlight/issues"

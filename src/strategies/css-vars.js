@@ -75,7 +75,7 @@ export async function findCssVars(text, importerOptions) {
 
   varNames = sortStringsInDescendingOrder(varNames);
 
-  const varNamesRegex = new RegExp(`var\\((${varNames.join("|")})\\)`, "g");
+  const varNamesRegex = new RegExp(`var\\((${varNames.join('|')})\\)`, 'g');
 
   match = varNamesRegex.exec(text);
 
