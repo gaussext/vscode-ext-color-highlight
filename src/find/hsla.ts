@@ -1,6 +1,6 @@
 import { ColorMatch } from '../types';
 
-const colorHsla = /(hsla?\([\d]{1,3},\s*[\d]{1,3}%,\s*[\d]{1,3}%(,\s*\d?\.?\d+)?\))/gi;
+const colorHsla = /(hsla?)\(\s*[\d]{1,3}\s*,\s*[\d]{1,3}%\s*,\s*[\d]{1,3}%\s*(?:,\s*[\d.]+)?\s*\)/gi;
 
 export async function findHsla(text: string): Promise<ColorMatch[]> {
   let match = colorHsla.exec(text);

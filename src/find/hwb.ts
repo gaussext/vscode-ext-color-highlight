@@ -1,7 +1,7 @@
 import Color from 'color';
 import { ColorMatch } from '../types';
 
-const colorHwb = /((hwb)\(\d+,\s*(100|0*\d{1,2})%,\s*(100|0*\d{1,2})%(,\s*0?\.?\d+)?\))/gi;
+const colorHwb = /(hwb)\(\s*\d+\s*,\s*(100|0*\d{1,2})%\s*,\s*(100|0*\d{1,2})%\s*(?:,\s*[\d.]+)?\s*\)/gi;
 
 export async function findHwb(text: string): Promise<ColorMatch[]> {
   let match = colorHwb.exec(text);

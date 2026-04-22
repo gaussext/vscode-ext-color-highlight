@@ -1,4 +1,4 @@
-import { findHexRGBA } from '../find/hex';
+import { findHexRGB, findHexRGBA } from '../find/hex';
 import { findWords } from '../find/words';
 import { findColorFunctionsInText, sortStringsInDescendingOrder } from '../find/functions';
 import { findHwb } from '../find/hwb';
@@ -19,6 +19,7 @@ export async function findLessVars(text: string, importerOptions: ImporterOption
     const name = match[1];
     const value = match[2];
     const values = await Promise.race([
+      findHexRGB(value),
       findHexRGBA(value),
       findWords(value),
       findColorFunctionsInText(value),

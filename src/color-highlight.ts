@@ -7,7 +7,7 @@ import { findCssVars } from './strategies/css-vars';
 import { findColorFunctionsInText } from './find/functions';
 import { findRgbNoFn } from './find/rgbWithoutFunction';
 import { findHslNoFn } from './find/hslWithoutFunction';
-import { findHexARGB, findHexRGBA } from './find/hex';
+import { findHexRGBA, findHexRGB } from './find/hex';
 import { findHwb } from './find/hwb';
 import { findWords } from './find/words';
 import { DecorationMap } from './lib/decoration-map';
@@ -33,9 +33,9 @@ export class DocumentHighlight {
     this.strategies = [findColorFunctionsInText, findHwb];
 
     if (viewConfig.useARGB) {
-      this.strategies.push(findHexARGB);
-    } else {
       this.strategies.push(findHexRGBA);
+    } else {
+      this.strategies.push(findHexRGB);
     }
 
     if (colorWordsLanguages.indexOf(document.languageId) > -1 || viewConfig.matchWords) {

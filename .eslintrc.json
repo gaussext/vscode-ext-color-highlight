@@ -8,7 +8,8 @@
     "browser": false,
     "commonjs": true,
     "es6": true,
-    "node": true
+    "node": true,
+    "jest": true
   },
   "extends": [
     "eslint:recommended"
@@ -18,5 +19,13 @@
     "no-unreachable": "warn",
     "semi": "warn",
     "quotes": ["warn", "single"]
-  }
+  },
+  "overrides": [
+    {
+      "files": ["test/**/*.ts"],
+      "env": {
+        "jest": true
+      }
+    }
+  ]
 }

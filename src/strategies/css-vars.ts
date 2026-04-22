@@ -1,4 +1,4 @@
-import { findHexRGBA } from '../find/hex';
+import { findHexRGBA, findHexRGB } from '../find/hex';
 import { findWords } from '../find/words';
 import { findColorFunctionsInText, sortStringsInDescendingOrder } from '../find/functions';
 import { findHwb } from '../find/hwb';
@@ -8,26 +8,22 @@ import { ColorMatch, ImporterOptions } from '../types';
 const defVarReg = /^\s*(--[-\w]+)\s*:\s*(.*)$/gm;
 const useVarReg = /var\((--[-\w]+)\)/g;
 
-function findVar(text: string, varColor: Record<string, string>, depth = 0): string | null {
+function findUseCssVars(text: string, varColor: Record<string, string>, depth = 0): string | null {
   const match = useVarReg.exec(text);
   if (match !== null) {
     const varName = match[1];
     if (varColor[varName]) {
       return varColor[varName];
     } else if (depth < 5) {
-      return findVar(varColor[varName] || '', varColor, depth + 1);
+      return findUseCssVars(varColor[varName] || '', varColor, depth + 1);
     }
   }
   return null;
 }
 
 export async function findCssVars(text: string, importerOptions: ImporterOptions): Promise<ColorMatch[]> {
-  console.log(importerOptions);
-  
   const injectContent = loadGlobalVariables(importerOptions);
-  
   const fullText = `${injectContent}\n${text}`;
-  // console.log(fullText);
   let match = defVarReg.exec(fullText);
   const result: ColorMatch[] = [];
   const varColor: Record<string, string> = {};
@@ -38,6 +34,7 @@ export async function findCssVars(text: string, importerOptions: ImporterOptions
     const value = match[2];
     
     const values = await Promise.race([
+      findHexRGB(value),
       findHexRGBA(value),
       findWords(value),
       findColorFunctionsInText(value),
@@ -50,7 +47,7 @@ export async function findCssVars(text: string, importerOptions: ImporterOptions
     }
 
     console.log(varColor);
-    const v = findVar(value, varColor);
+    const v = findUseCssVars(value, varColor);
     console.log(v);
     if (v) {
       varNames.push(name);

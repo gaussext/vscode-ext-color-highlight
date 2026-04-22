@@ -3,7 +3,7 @@
     "target": "ES2019",
     "module": "CommonJS",
     "lib": ["ES2020", "DOM"],
-    "types": ["node"],
+    "types": ["node", "jest"],
     "strict": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
