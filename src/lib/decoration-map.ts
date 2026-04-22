@@ -1,12 +1,22 @@
-'use strict';
-import vscode from 'vscode';
+import * as vscode from 'vscode';
 import { getColorContrast } from './dynamic-contrast';
+import { ViewConfig } from '../types';
 
-/**
- * 
- * @param {string} color 
- */
-function createDot(color = '') {
+interface DecorationRule {
+  contentText?: string;
+  margin?: string;
+  width?: string;
+  height?: string;
+  backgroundColor?: string;
+  border?: string;
+  color?: string;
+  overviewRulerColor?: string;
+  after?: object;
+  before?: object;
+  borderRadius?: string;
+}
+
+function createDot(color = ''): DecorationRule {
   return {
     contentText: ' ',
     margin: '0.1em 0.2em 0',
@@ -17,43 +27,23 @@ function createDot(color = '') {
   };
 }
 
-/**
- *
- * @export
- * @class DecorationMap
- *
- * @property {{
- *  markRuler: boolean,
- *  markerType: string
- * }} options
- */
 export class DecorationMap {
-  /**
-   * Creates an instance of DecorationMap.
-   * @param {{
-   *  markRuler: boolean,
-   *  markerType: string
-   * }} options
-   *
-   * @memberOf DecorationMap
-   */
-  constructor(options) {
-    this.options = Object.assign({}, options);
+  private options: ViewConfig;
+  private _map: Map<string, vscode.TextEditorDecorationType>;
+  private _keys: string[];
+
+  constructor(options: ViewConfig) {
+    this.options = options;
     this._map = new Map();
     this._keys = [];
   }
 
-  /**
-   * @param {string} color
-   * @returns vscode.TextEditorDecorationType
-   */
-  get(color) {
+  get(color: string): vscode.TextEditorDecorationType {
     if (!this._map.has(color)) {
-      let rules = {};
+      const rules: DecorationRule = {};
+
       if (this.options.markRuler) {
-        rules = {
-          overviewRulerColor: color
-        };
+        rules.overviewRulerColor = color;
       }
 
       switch (this.options.markerType) {
@@ -84,18 +74,19 @@ export class DecorationMap {
           rules.border = `3px solid ${color}`;
           rules.borderRadius = '3px';
       }
+
       this._map.set(color, vscode.window.createTextEditorDecorationType(rules));
       this._keys.push(color);
     }
-    return this._map.get(color);
+
+    return this._map.get(color)!;
   }
 
-
-  keys() {
+  keys(): string[] {
     return this._keys.slice();
   }
 
-  dispose() {
+  dispose(): void {
     this._map.forEach((decoration) => {
       decoration.dispose();
     });

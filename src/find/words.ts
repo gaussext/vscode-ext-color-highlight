@@ -1,5 +1,6 @@
 import Color from 'color';
-import webColors from 'color-name';
+import * as webColors from 'color-name';
+import { ColorMatch } from '../types';
 
 const preparedRePart = Object.keys(webColors)
   .map(color => `\\b${color}\\b`)
@@ -7,18 +8,9 @@ const preparedRePart = Object.keys(webColors)
 
 const colorWeb = new RegExp('.?(' + preparedRePart + ')(?!-)', 'g');
 
-/**
- * @export
- * @param {string} text
- * @returns {{
- *  start: number,
- *  end: number,
- *  color: string
- * }}
- */
-export async function findWords(text) {
+export async function findWords(text: string): Promise<ColorMatch[]> {
   let match = colorWeb.exec(text);
-  let result = [];
+  const result: ColorMatch[] = [];
 
   while (match !== null) {
     const firstChar = match[0][0];
@@ -26,22 +18,17 @@ export async function findWords(text) {
     const start = match.index + (match[0].length - matchedColor.length);
     const end = colorWeb.lastIndex;
 
-    if (firstChar.length && /[-\\$@#]/.test(firstChar)) {
+    if (firstChar.length && /[-@#]/.test(firstChar)) {
       match = colorWeb.exec(text);
       continue;
     }
 
     try {
-      const color = Color(matchedColor)
-        .rgb()
-        .string();
-
-      result.push({
-        start,
-        end,
-        color
-      });
-    } catch (e) { }
+      const color = Color(matchedColor).rgb().string();
+      result.push({ start, end, color });
+    } catch (_e) {
+      // ignore
+    }
 
     match = colorWeb.exec(text);
   }

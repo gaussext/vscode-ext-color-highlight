@@ -1,38 +1,28 @@
-import { findHexRGBA } from './hex';
-import { findWords } from './words';
-import { findColorFunctionsInText, sortStringsInDescendingOrder } from './functions';
-import { findHwb } from './hwb';
-import { parseImports } from '../lib/sass-importer';
-import { loadGlobalVariables } from '../lib/global-importer';
+import { findHexRGBA } from '../find/hex';
+import { findWords } from '../find/words';
+import { findColorFunctionsInText, sortStringsInDescendingOrder } from '../find/functions';
+import { findHwb } from '../find/hwb';
+import { parseImports } from '../importer/sass-importer';
+import { loadGlobalVariables } from '../importer/global-importer';
+import { ColorMatch, ImporterOptions } from '../types';
 
 const setVariable = /^\s*\$([-\w]+)\s*:\s*(.*)$/gm;
 
-/**
- * @export
- * @param {string} text
- * @returns {{
- *  start: number,
- *  end: number,
- *  color: string
- * }}
- */
-export async function findScssVars(text, importerOptions) {
+export async function findScssVars(text: string, importerOptions: ImporterOptions): Promise<ColorMatch[]> {
   let textWithImports = text;
 
   try {
     textWithImports = await parseImports(importerOptions);
-  } catch(err) {
+  } catch (_err) {
     console.log('Error during imports loading, falling back to local variables parsing');
   }
 
   const injectContent = loadGlobalVariables(importerOptions);
-  const fullText =  `${injectContent}
-${textWithImports}`;
+  const fullText = `${injectContent}\n${textWithImports}`;
   let match = setVariable.exec(fullText);
-  let result = [];
-
-  const varColor = {};
-  let varNames = [];
+  const result: ColorMatch[] = [];
+  const varColor: Record<string, string> = {};
+  const varNames: string[] = [];
 
   while (match !== null) {
     const name = match[1];
@@ -56,10 +46,8 @@ ${textWithImports}`;
     return [];
   }
 
-  varNames = sortStringsInDescendingOrder(varNames);
-
-  const varNamesRegex = new RegExp(`\\$(${varNames.join('|')})(?!-|\\s*:)`, 'g');
-
+  const sortedVarNames = sortStringsInDescendingOrder(varNames);
+  const varNamesRegex = new RegExp(`\\$(${sortedVarNames.join('|')})(?!-|\\s*:)`, 'g');
   match = varNamesRegex.exec(text);
 
   while (match !== null) {
@@ -67,15 +55,9 @@ ${textWithImports}`;
     const end = varNamesRegex.lastIndex;
     const varName = match[1];
 
-    result.push({
-      start,
-      end,
-      color: varColor[varName]
-    });
-
+    result.push({ start, end, color: varColor[varName] });
     match = varNamesRegex.exec(text);
   }
-
 
   return result;
 }

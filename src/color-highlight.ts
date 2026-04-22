@@ -1,41 +1,38 @@
-'use strict';
-import {
-  workspace,
-  window,
-  Range,
-} from 'vscode';
+import * as vscode from 'vscode';
+import * as path from 'path';
 import { findScssVars } from './strategies/scss-vars';
 import { findLessVars } from './strategies/less-vars';
 import { findStylVars } from './strategies/styl-vars';
 import { findCssVars } from './strategies/css-vars';
-import { findColorFunctionsInText } from './strategies/functions';
-import { findRgbNoFn } from './strategies/rgbWithoutFunction';
-import { findHslNoFn } from './strategies/hslWithoutFunction';
-import { findHexARGB, findHexRGBA } from './strategies/hex';
-import { findHwb } from './strategies/hwb';
-import { findWords } from './strategies/words';
+import { findColorFunctionsInText } from './find/functions';
+import { findRgbNoFn } from './find/rgbWithoutFunction';
+import { findHslNoFn } from './find/hslWithoutFunction';
+import { findHexARGB, findHexRGBA } from './find/hex';
+import { findHwb } from './find/hwb';
+import { findWords } from './find/words';
 import { DecorationMap } from './lib/decoration-map';
-import { dirname } from 'path';
+import { ViewConfig, ColorMatch } from './types';
 
 const colorWordsLanguages = ['css', 'scss', 'sass', 'less', 'stylus'];
 
 export class DocumentHighlight {
+  private disposed = false;
+  private document: vscode.TextDocument;
+  // eslint-disable-next-line no-unused-vars
+  private strategies: Array<(text: string) => Promise<ColorMatch[]>>;
+  private decorations!: DecorationMap;
+  private listener!: vscode.Disposable;
 
-  /**
-   * Creates an instance of DocumentHighlight.
-   * @param {TextDocument} document
-   * @param {any} viewConfig
-   *
-   * @memberOf DocumentHighlight
-   */
-  constructor(document, viewConfig) {
+  public getDocument(): vscode.TextDocument {
+    return this.document;
+  }
 
+  constructor(document: vscode.TextDocument, viewConfig: ViewConfig) {
     this.disposed = false;
-
     this.document = document;
     this.strategies = [findColorFunctionsInText, findHwb];
 
-    if (viewConfig.useARGB == true) {
+    if (viewConfig.useARGB) {
       this.strategies.push(findHexARGB);
     } else {
       this.strategies.push(findHexRGBA);
@@ -60,7 +57,9 @@ export class DocumentHighlight {
         isValid = false;
       }
 
-      if (isValid) this.strategies.push(findRgbNoFn);
+      if (isValid) {
+        this.strategies.push(findRgbNoFn);
+      }
     }
 
     if (viewConfig.matchHslWithNoFunction) {
@@ -78,43 +77,45 @@ export class DocumentHighlight {
         isValid = false;
       }
 
-      if (isValid) this.strategies.push(findHslNoFn);
+      if (isValid) {
+        this.strategies.push(findHslNoFn);
+      }
     }
 
+    const cwd = path.dirname(document.uri.fsPath);
+
     this.strategies.push(text => findCssVars(text, {
-      cwd: dirname(document.uri.fsPath),
+      cwd,
       globalPaths: viewConfig.globalPaths
     }));
+
     this.strategies.push(text => findLessVars(text, {
       data: text,
-      cwd: dirname(document.uri.fsPath),
+      cwd,
       extensions: ['.less'],
       includePaths: viewConfig.includePaths || [],
       globalPaths: viewConfig.globalPaths
     }));
+
     this.strategies.push(text => findScssVars(text, {
       data: text,
-      cwd: dirname(document.uri.fsPath),
+      cwd,
       extensions: ['.scss', '.sass'],
       includePaths: viewConfig.includePaths || [],
       globalPaths: viewConfig.globalPaths
     }));
+
     this.strategies.push(findStylVars);
+
     this.initialize(viewConfig);
   }
 
-  initialize(viewConfig) {
+  private initialize(viewConfig: ViewConfig): void {
     this.decorations = new DecorationMap(viewConfig);
-    this.listner = workspace.onDidChangeTextDocument(({ document }) => this.onUpdate(document));
+    this.listener = vscode.workspace.onDidChangeTextDocument(({ document }) => this.onUpdate(document));
   }
 
-  /**
-   *
-   * @param {TextDocumentChangeEvent} e
-   *
-   * @memberOf DocumentHighlight
-   */
-  onUpdate(document = this.document) {
+  onUpdate(document: vscode.TextDocument = this.document): void {
     if (this.disposed || this.document.uri.toString() !== document.uri.toString()) {
       return;
     }
@@ -122,41 +123,35 @@ export class DocumentHighlight {
     const text = this.document.getText();
     const version = this.document.version.toString();
 
-    return this.updateRange(text, version);
+    this.updateRange(text, version);
   }
 
-  /**
-   * @param {string} text
-   * @param {string} version
-   *
-   * @memberOf DocumentHighlight
-   */
-  async updateRange(text, version) {
+  async updateRange(text: string, version: string): Promise<void> {
     try {
       const result = await Promise.all(this.strategies.map(fn => fn(text)));
 
       const actualVersion = this.document.version.toString();
       if (actualVersion !== version) {
-        if (process.env.COLOR_HIGHLIGHT_DEBUG) throw new Error('Document version already has changed');
-
+        if (process.env.COLOR_HIGHLIGHT_DEBUG) {
+          throw new Error('Document version already has changed');
+        }
         return;
       }
 
       const colorRanges = groupByColor(concatAll(result));
 
       if (this.disposed) {
-        return false;
+        return;
       }
 
-      const updateStack = this.decorations.keys()
-        .reduce((state, color) => {
-          state[color] = [];
-          return state;
-        }, {});
+      const updateStack: Record<string, vscode.Range[]> = {};
+      this.decorations.keys().forEach(color => {
+        updateStack[color] = [];
+      });
 
       for (const color in colorRanges) {
         updateStack[color] = colorRanges[color].map(item => {
-          return new Range(
+          return new vscode.Range(
             this.document.positionAt(item.start),
             this.document.positionAt(item.end)
           );
@@ -166,7 +161,7 @@ export class DocumentHighlight {
       for (const color in updateStack) {
         const decoration = this.decorations.get(color);
 
-        window.visibleTextEditors
+        vscode.window.visibleTextEditors
           .filter(({ document }) => document.uri === this.document.uri)
           .forEach(editor => editor.setDecorations(decoration, updateStack[color]));
       }
@@ -175,31 +170,27 @@ export class DocumentHighlight {
     }
   }
 
-  dispose() {
+  dispose(): void {
     this.disposed = true;
     this.decorations.dispose();
-    this.listner.dispose();
+    this.listener.dispose();
 
-    this.decorations = null;
-    this.document = null;
-    this.colors = null;
-    this.listner = null;
+    this.decorations = null as unknown as DecorationMap;
+    this.document = null as unknown as vscode.TextDocument;
+    this.listener = null as unknown as vscode.Disposable;
   }
 }
 
-function groupByColor(results) {
-  return results
-    .reduce((collection, item) => {
-      if (!collection[item.color]) {
-        collection[item.color] = [];
-      }
-
-      collection[item.color].push(item);
-
-      return collection;
-    }, {});
+function groupByColor(results: ColorMatch[]): Record<string, ColorMatch[]> {
+  return results.reduce((collection, item) => {
+    if (!collection[item.color]) {
+      collection[item.color] = [];
+    }
+    collection[item.color].push(item);
+    return collection;
+  }, {} as Record<string, ColorMatch[]>);
 }
 
-function concatAll(arr) {
+function concatAll(arr: ColorMatch[][]): ColorMatch[] {
   return arr.reduce((result, item) => result.concat(item), []);
 }
