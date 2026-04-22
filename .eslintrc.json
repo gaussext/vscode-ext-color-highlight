@@ -1,25 +1,31 @@
 {
-  "parser": "@babel/eslint-parser",
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "sourceType": "module",
+    "ecmaVersion": 2019
+  },
   "env": {
     "browser": false,
     "commonjs": true,
     "es6": true,
-    "node": true
+    "node": true,
+    "jest": true
   },
-  "parserOptions": {
-    "sourceType": "module",
-    "allowImportExportEverywhere": false,
-    "codeFrame": false
-  },
+  "extends": [
+    "eslint:recommended"
+  ],
   "rules": {
-    "no-const-assign": "warn",
-    "no-this-before-super": "warn",
     "no-undef": "warn",
     "no-unreachable": "warn",
-    "no-unused-vars": "warn",
-    "constructor-super": "warn",
-    "valid-typeof": "warn",
     "semi": "warn",
     "quotes": ["warn", "single"]
-  }
+  },
+  "overrides": [
+    {
+      "files": ["test/**/*.ts"],
+      "env": {
+        "jest": true
+      }
+    }
+  ]
 }

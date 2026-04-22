@@ -1,22 +1,24 @@
 const baseConfig = {
-  entry: './src/main.js',
+  entry: './src/main.ts',
   externals: {
     'vscode': 'vscode'
   },
   module: {
     rules: [
       {
-        test: /\.js$/,
-        exclude: /(node_modules|bower_components)/,
+        test: /\.ts$/,
+        exclude: /node_modules/,
         use: {
-          loader: 'babel-loader',
+          loader: 'ts-loader',
           options: {
-            presets: [['@babel/preset-env', { targets: 'defaults' }]],
-            plugins: ['@babel/transform-runtime'],
+            transpileOnly: true
           }
         }
       }
     ]
+  },
+  resolve: {
+    extensions: ['.ts', '.js']
   }
 };
 
@@ -39,9 +41,10 @@ const webConfig = {
     devtoolModuleFilenameTemplate: '[absolute-resource-path]'
   },
   resolve: {
+    ...baseConfig.resolve,
     fallback: {
       'path': require.resolve('path-browserify'),
-      'fs': false 
+      'fs': false
     }
   }
 };

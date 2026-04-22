@@ -1,20 +1,11 @@
 import Color from 'color';
+import { ColorMatch } from '../types';
 
-// Using [^\S\n] to avoid matching colors between lines. Using (?:;| |$) to avoid double matching with rgb() function
 const colorRgb = /([.\d]{1,5})[^\S\n]*(?<commaOrSpace>[^\S\n]|,)[^\S\n]*([.\d]{1,5})[^\S\n]*\k<commaOrSpace>[^\S\n]*([.\d]{1,5})(?:;| |$)/g;
 
-/**
- * @export
- * @param {string} text
- * @returns {{
- *  start: number,
- *  end: number,
- *  color: string
- * }}
- */
-export async function findRgbNoFn(text) {
+export async function findRgbNoFn(text: string): Promise<ColorMatch[]> {
   let match = colorRgb.exec(text);
-  let result = [];
+  const result: ColorMatch[] = [];
 
   while (match !== null) {
     const [matchedColor, red, , green, blue] = match;
@@ -27,12 +18,7 @@ export async function findRgbNoFn(text) {
         parseInt(green),
         parseInt(blue)
       ).string();
-
-      result.push({
-        start,
-        end,
-        color
-      });
+      result.push({ start, end, color });
     } catch (e) {
       console.error(e);
     }
