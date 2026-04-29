@@ -33,6 +33,3 @@ jobs:
           draft: false
           prerelease: ${{ contains(github.ref_name, '-') }}
 
-      - name: Publish to Marketplace
-        if: ${{ secrets.VSCE_PAT != '' }}
-        run: npx vsce publish -p ${{ secrets.VSCE_PAT }}
