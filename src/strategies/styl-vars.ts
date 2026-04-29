@@ -4,7 +4,7 @@ import { findHwb } from '../find/hwb';
 import { ColorMatch } from '../types';
 import { findHex } from '../find/hex';
 
-const defVarRegLine = /^\s*\$?([-\w]+)\s*=\s*(.*)$/;
+const defVarRegLine = /^\s*\$?([-\w]+)\s*=\s*([^;]+)/;
 
 async function findColorValue(value: string): Promise<string | null> {
   const finders = [findHex, findWords, findColorFunctionsInText, findHwb];
@@ -65,15 +65,13 @@ export async function findStylVars(text: string): Promise<ColorMatch[]> {
   const result: ColorMatch[] = [];
   let lineStart = 0;
   for (const line of lines) {
-    if (!defVarRegLine.test(line)) {
-      for (const varName of sortedVarNames) {
-        const match = line.match(new RegExp(`\\$?${varName}(?!-|\\s*=)`));
-        if (match) {
-          const start = lineStart + match.index!;
-          const end = start + match[0].length;
-          result.push({ start, end, color: varColor[varName] });
-          break;
-        }
+    for (const varName of sortedVarNames) {
+      const match = line.match(new RegExp(`\\$?${varName}(?!-|\\s*=)`));
+      if (match) {
+        const start = lineStart + match.index!;
+        const end = start + match[0].length;
+        result.push({ start, end, color: varColor[varName] });
+        break;
       }
     }
     lineStart += line.length + 1;

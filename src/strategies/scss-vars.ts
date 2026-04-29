@@ -1,10 +1,10 @@
 import { findWords } from '../find/words';
-import { findColorFunctionsInText, sortStringsInDescendingOrder } from '../find/functions';
+import { findColorFunctionsInText } from '../find/functions';
 import { findHwb } from '../find/hwb';
 import { ColorMatch } from '../types';
 import { findHex } from '../find/hex';
 
-const defVarRegLine = /^\s*\$([-\w]+)\s*:\s*(.*)$/;
+const defVarRegLine = /^\s*\$([-\w]+)\s*:\s*([^;]+)/;
 
 async function findColorValue(value: string): Promise<string | null> {
   const finders = [findHex, findWords, findColorFunctionsInText, findHwb];

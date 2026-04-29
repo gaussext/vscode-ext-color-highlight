@@ -62,9 +62,9 @@ describe('css-vars', () => {
       const prefix = '--primary: #ff0000;\n';
       const result = await findCssVars(prefix + text);
       expect(result).toHaveLength(1);
-      const expectedStart = prefix.length + '.foo { color: '.length;
+      const expectedStart = prefix.length + '.foo { color: var('.length;
       expect(result[0].start).toBe(expectedStart);
-      expect(result[0].end).toBe(expectedStart + 'var(--primary)'.length);
+      expect(result[0].end).toBe(expectedStart + '--primary'.length);
     });
 
     it('should handle multiple usages of different variables', async () => {
@@ -99,6 +99,37 @@ describe('css-vars', () => {
       const result = await findCssVars(text);
       expect(result).toHaveLength(1);
       expect(result[0].color).toBe('rgb(255, 0, 0)');
+    });
+
+    it('should highlight var() references in :root definitions', async () => {
+      const text = [
+        ':root {',
+        '  --test-color-red: #f56c6c;',
+        '  --test-color-green: #67c23a;',
+        '  --test-color-blue: #409eff;',
+        '  --test-color-yellow: #fdd835;',
+        '',
+        '  --test-color-primary: var(--test-color-blue);',
+        '  --test-color-success: var(--test-color-green);',
+        '  --test-color-danger: var(--test-color-red);',
+        '  --test-color-warning: var(--test-color-yellow);',
+        '',
+        '  --test-color-1: var(--test-color-primary);',
+        '  --test-color-11: var(--test-color-1);',
+        '  --test-color-111: var(--test-color-11);',
+        '  --test-color-1111: var(--test-color-111);',
+        '  --test-color-11111: var(--test-color-1111);',
+        '  --test-color-111111: var(--test-color-11111);',
+        '  --test-color-1111111: var(--test-color-111111);',
+        '  --test-color-11111111: var(--test-color-1111111);',
+        '}',
+      ].join('\n');
+      const result = await findCssVars(text);
+      expect(result).toHaveLength(12);
+      for (const r of result) {
+        expect(r.color).toBeTruthy();
+        expect(r.color).not.toBe('');
+      }
     });
   });
 

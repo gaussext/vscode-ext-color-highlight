@@ -31,15 +31,14 @@ describe('less-vars', () => {
       expect(result[0].color).toBe('rgb(0, 0, 255)');
     });
 
-    it('should resolve only top-down references (no forward ref)', async () => {
+    it('should not resolve forward references', async () => {
       const text = [
         '@a: @b;',
         '@b: #ff0000;',
         '.foo { color: @a; }',
       ].join('\n');
       const result = await findLessVars(text);
-      expect(result).toHaveLength(1);
-      expect(result[0].color).toBe('rgb(255, 0, 0)');
+      expect(result).toHaveLength(0);
     });
 
     it('should skip duplicate variable definitions', async () => {

@@ -1,6 +1,6 @@
 import { findHex } from '../find/hex';
 import { findWords } from '../find/words';
-import { findColorFunctionsInText, sortStringsInDescendingOrder } from '../find/functions';
+import { findColorFunctionsInText } from '../find/functions';
 import { findHwb } from '../find/hwb';
 import { ColorMatch } from '../types';
 
@@ -62,7 +62,7 @@ export async function findCssVars(text: string): Promise<ColorMatch[]> {
     return [];
   }
 
-  const useVarRegex = /var\(([-\w]+)\)/;
+  const useVarRegex = /(?<=var\()([-\w]+)(?=\))/;
   const result: ColorMatch[] = [];
   let lineStart = 0;
   for (const line of lines) {
