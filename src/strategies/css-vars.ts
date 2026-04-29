@@ -31,10 +31,9 @@ async function findColorValue(value: string): Promise<string | null> {
   return null;
 }
 
-export async function findCssVars(text: string): Promise<ColorMatch[]> {
+export async function resolveCssVars(text: string): Promise<Record<string, string>> {
   const lines = text.split('\n');
   const varColor: Record<string, string> = {};
-  const varNames: string[] = [];
   const seen = new Set<string>();
 
   for (const line of lines) {
@@ -47,22 +46,21 @@ export async function findCssVars(text: string): Promise<ColorMatch[]> {
 
     const directColor = await findColorValue(value);
     if (directColor) {
-      varNames.push(name);
       varColor[name] = directColor;
-    }
-
-    const refColor = findUseCssVars(value, varColor);
-    if (refColor && !directColor) {
-      varNames.push(name);
-      varColor[name] = refColor;
+    } else {
+      const refColor = findUseCssVars(value, varColor);
+      if (refColor) {
+        varColor[name] = refColor;
+      }
     }
   }
 
-  if (!varNames.length) {
-    return [];
-  }
+  return varColor;
+}
 
+export function findCssVarsInText(text: string, varColor: Record<string, string>): ColorMatch[] {
   const useVarRegex = /(?<=var\()([-\w]+)(?=\))/;
+  const lines = text.split('\n');
   const result: ColorMatch[] = [];
   let lineStart = 0;
   for (const line of lines) {
@@ -76,4 +74,10 @@ export async function findCssVars(text: string): Promise<ColorMatch[]> {
   }
 
   return result;
+}
+
+export async function findCssVars(text: string): Promise<ColorMatch[]> {
+  const varColor = await resolveCssVars(text);
+  if (!Object.keys(varColor).length) return [];
+  return findCssVarsInText(text, varColor);
 }
