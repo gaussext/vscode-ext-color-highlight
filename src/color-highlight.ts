@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
 import { findScssVars } from './strategies/scss-vars';
 import { findLessVars } from './strategies/less-vars';
 import { findStylVars } from './strategies/styl-vars';
@@ -12,6 +11,7 @@ import { findHwb } from './find/hwb';
 import { findWords } from './find/words';
 import { DecorationMap } from './lib/decoration-map';
 import { ViewConfig, ColorMatch } from './types';
+import { loadGlobalVariables } from './importer/global-importer';
 
 const colorWordsLanguages = ['css', 'scss', 'sass', 'less', 'stylus'];
 
@@ -84,31 +84,11 @@ export class DocumentHighlight {
         this.strategies.push(findHslNoFn);
       }
     }
-
-    const cwd = path.dirname(document.uri.fsPath);
-
-    this.strategies.push(text => findCssVars(text, {
-      cwd,
-      globalPaths: viewConfig.globalPaths
-    }));
-
-    this.strategies.push(text => findLessVars(text, {
-      data: text,
-      cwd,
-      extensions: ['.less'],
-      includePaths: viewConfig.includePaths || [],
-      globalPaths: viewConfig.globalPaths
-    }));
-
-    this.strategies.push(text => findScssVars(text, {
-      data: text,
-      cwd,
-      extensions: ['.scss', '.sass'],
-      includePaths: viewConfig.includePaths || [],
-      globalPaths: viewConfig.globalPaths
-    }));
-
-    this.strategies.push(findStylVars);
+    const injectContent = loadGlobalVariables({ globalPaths: viewConfig.globalPaths });
+    this.strategies.push(text => findCssVars(injectContent + '\n' + text));
+    this.strategies.push(text => findLessVars(injectContent + '\n' + text));
+    this.strategies.push(text =>findScssVars(injectContent + '\n' + text));
+    this.strategies.push(text => findStylVars(injectContent + '\n' + text));
 
     this.initialize(viewConfig);
   }
@@ -167,7 +147,7 @@ export class DocumentHighlight {
       const colorRanges = await this.getColorRanges(text, version);
       if (!colorRanges || this.disposed) return;
 
-      this.applyDecorations(colorRanges, version);
+      this.applyDecorations(colorRanges);
       this.lastUpdatedVersion = version;
     } catch (error) {
       console.error(error);
@@ -181,7 +161,7 @@ export class DocumentHighlight {
     return groupByColor(concatAll(result));
   }
 
-  private applyDecorations(colorRanges: Record<string, ColorMatch[]>, version: string): void {
+  private applyDecorations(colorRanges: Record<string, ColorMatch[]>): void {
     const updateStack: Record<string, vscode.Range[]> = {};
     this.decorations.keys().forEach(color => {
       updateStack[color] = [];

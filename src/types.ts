@@ -7,7 +7,6 @@ export interface ColorMatch {
 export interface ImporterOptions {
   cwd?: string;
   extensions?: string[];
-  includePaths?: string[];
   globalPaths?: string[];
   data?: string;
 }
@@ -23,6 +22,5 @@ export interface ViewConfig {
   hslWithNoFunctionLanguages: string[];
   markerType: string;
   markRuler: boolean;
-  includePaths: string[];
   globalPaths: string[];
 }

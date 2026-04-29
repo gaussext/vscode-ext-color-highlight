@@ -2,8 +2,7 @@ import { findHexRGB, findHexRGBA } from '../find/hex';
 import { findWords } from '../find/words';
 import { findColorFunctionsInText, sortStringsInDescendingOrder } from '../find/functions';
 import { findHwb } from '../find/hwb';
-import { loadGlobalVariables } from '../importer/global-importer';
-import { ColorMatch, ImporterOptions } from '../types';
+import { ColorMatch } from '../types';
 
 const setVariable = /^\s*@([-\w]+)\s*:\s*(.*)$/gm;
 const defVarRegLine = /^\s*@([-\w]+)\s*:\s*(.*)$/;
@@ -32,11 +31,8 @@ function findUseLessVars(text: string, varColor: Record<string, string>, depth =
   return null;
 }
 
-export async function findLessVars(text: string, importerOptions: ImporterOptions): Promise<ColorMatch[]> {
-  const injectContent = loadGlobalVariables(importerOptions);
-  const fullText = `${injectContent}\n${text}`;
-
-  const defLines = fullText.match(setVariable) || [];
+export async function findLessVars(text: string): Promise<ColorMatch[]> {
+  const defLines = text.match(setVariable) || [];
   const varColor: Record<string, string> = {};
   const varNames: string[] = [];
   const seen = new Set<string>();
