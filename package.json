@@ -2,7 +2,7 @@
   "name": "color-highlight",
   "displayName": "Color Highlight",
   "description": "Highlight web colors in your editor",
-  "version": "2.9.5",
+  "version": "3.0.0-beta.2",
   "publisher": "gausszhou",
   "license": "GPL-3.0",
   "engines": {
@@ -145,11 +145,6 @@
           "default": true,
           "description": "Highlight colors on the ruler (scroll bar), true/false",
           "type": "boolean"
-        },
-        "color-highlight.includePaths": {
-          "default": [],
-          "description": "Array of absolute paths to search while perform file lookups.",
-          "type": "array"
         },
         "color-highlight.globalPaths": {
           "default": [],

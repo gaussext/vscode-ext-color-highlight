@@ -1,4 +1,4 @@
-import { findHslNoFn } from '../src/find/hslWithoutFunction';
+import { findHslNoFn } from '@/find/hslWithoutFunction';
 
 describe('hslWithoutFunction', () => {
   describe('findHslNoFn', () => {

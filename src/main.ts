@@ -6,6 +6,12 @@ const COMMAND_NAME = 'extension.colorHighlight';
 let instanceMap: DocumentHighlight[] = [];
 let config: vscode.WorkspaceConfiguration;
 
+function getUri(docOrInstance: vscode.TextDocument | DocumentHighlight): string {
+  return docOrInstance instanceof DocumentHighlight
+    ? docOrInstance.getDocument().uri.toString()
+    : docOrInstance.uri.toString();
+}
+
 export function activate(context: vscode.ExtensionContext): void {
   instanceMap = [];
   config = vscode.workspace.getConfiguration('color-highlight');
@@ -58,11 +64,13 @@ async function findOrCreateInstance(document: vscode.TextDocument): Promise<Docu
     return;
   }
 
-  const found = instanceMap.find((instance) => instance.getDocument() === document);
+    const docUri = getUri(document);
+  const found = instanceMap.find((instance) => getUri(instance) === docUri);
 
   if (!found) {
     const instance = new DocumentHighlight(document, config as unknown as ViewConfig);
     instanceMap.push(instance);
+    instance.onUpdate();
   }
 
   return found || instanceMap[instanceMap.length - 1];
@@ -77,13 +85,15 @@ async function runHighlightEditorCommand(
     document = editor && editor.document;
   }
 
-  return doHighlight([document]);
+  if (document) {
+    const instance = await findOrCreateInstance(document);
+    instance?.onUpdate();
+  }
 }
 
 async function doHighlight(documents: vscode.TextDocument[] = []): Promise<void> {
   if (documents.length) {
-    const instances = await Promise.all(documents.map(findOrCreateInstance));
-    instances.forEach(instance => instance && instance.onUpdate());
+    await Promise.all(documents.map(findOrCreateInstance));
   }
 }
 
@@ -94,11 +104,21 @@ function onConfigurationChange(): void {
 
 function onOpenEditor(editors: readonly vscode.TextEditor[]): void {
   const documents = editors.map(({ document }) => document);
-  const forDisposal = instanceMap.filter((instance) => documents.indexOf(instance.getDocument()) === -1);
+  const documentUris = documents.map(getUri);
 
-  instanceMap = instanceMap.filter((instance) => documents.indexOf(instance.getDocument()) > -1);
+  const forDisposal = instanceMap.filter(
+    (instance) => documentUris.indexOf(getUri(instance)) === -1
+  );
+  instanceMap = instanceMap.filter(
+    (instance) => documentUris.indexOf(getUri(instance)) > -1
+  );
   forDisposal.forEach(instance => instance.dispose());
 
   const validDocuments = documents.filter(doc => isValidDocument(config as unknown as ViewConfig, doc));
-  doHighlight(validDocuments);
+
+  const newDocuments = validDocuments.filter(
+    doc => !instanceMap.some(instance => getUri(instance) === getUri(doc))
+  );
+
+  doHighlight(newDocuments);
 }

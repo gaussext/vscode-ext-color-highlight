@@ -1,4 +1,4 @@
-import { findHwb } from '../src/find/hwb';
+import { findHwb } from '@/find/hwb';
 
 describe('hwb', () => {
   describe('findHwb', () => {

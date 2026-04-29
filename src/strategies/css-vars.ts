@@ -1,16 +1,16 @@
-import { findHexRGBA, findHexRGB } from '../find/hex';
+import { findHex } from '../find/hex';
 import { findWords } from '../find/words';
-import { findColorFunctionsInText, sortStringsInDescendingOrder } from '../find/functions';
+import { findColorFunctionsInText } from '../find/functions';
 import { findHwb } from '../find/hwb';
-import { loadGlobalVariables } from '../importer/global-importer';
-import { ColorMatch, ImporterOptions } from '../types';
+import { ColorMatch } from '../types';
 
-const defVarReg = /^\s*(--[-\w]+)\s*:\s*(.*)$/gm;
-const useVarReg = /var\((--[-\w]+)\)/g;
+const defVarRegLine = /^\s*(--[-\w]+)\s*:\s*(.*)$/;
+const useVarRegLine = /var\((--[-\w]+)\)/;
 
+// 递归查找 var() 引用，depth 防止循环引用
 function findUseCssVars(text: string, varColor: Record<string, string>, depth = 0): string | null {
-  const match = useVarReg.exec(text);
-  if (match !== null) {
+  const match = text.match(useVarRegLine);
+  if (match) {
     const varName = match[1];
     if (varColor[varName]) {
       return varColor[varName];
@@ -21,68 +21,62 @@ function findUseCssVars(text: string, varColor: Record<string, string>, depth = 
   return null;
 }
 
-export async function findCssVars(text: string, importerOptions: ImporterOptions): Promise<ColorMatch[]> {
-  const injectContent = loadGlobalVariables(importerOptions);
-  const fullText = `${injectContent}\n${text}`;
-  let match = defVarReg.exec(fullText);
-  const result: ColorMatch[] = [];
+async function findColorValue(value: string): Promise<string | null> {
+  const finders = [findHex, findWords, findColorFunctionsInText, findHwb];
+  for (const finder of finders) {
+    const result = await finder(value);
+    if (result.length) {
+      return result[0].color;
+    }
+  }
+  return null;
+}
+
+// 逐行解析 CSS 变量定义，解析为颜色值映射表
+export async function resolveCssVars(text: string): Promise<Record<string, string>> {
+  const lines = text.split(/\r?\n/);
   const varColor: Record<string, string> = {};
-  const varNames: string[] = [];
+  const seen = new Set<string>();
 
-  while (match !== null) {
-    const name = match[1];
-    const value = match[2];
-    
-    const values = await Promise.race([
-      findHexRGB(value),
-      findHexRGBA(value),
-      findWords(value),
-      findColorFunctionsInText(value),
-      findHwb(value),
-    ]);
-    console.log(name, value, values);
-    if (values.length) {
-      varNames.push(name);
-      varColor[name] = values[0].color;
+  for (const line of lines) {
+    const matcher = line.match(defVarRegLine);
+    if (!matcher) continue;
+    const name = matcher[1];
+    const value = matcher[2];
+    if (seen.has(name)) continue;
+    seen.add(name);
+
+    // 先尝试直接颜色值，再尝试 var() 引用
+    const directColor = await findColorValue(value);
+    if (directColor) {
+      varColor[name] = directColor;
+    } else {
+      const refColor = findUseCssVars(value, varColor);
+      if (refColor) {
+        varColor[name] = refColor;
+      }
     }
+  }
 
-    console.log(varColor);
-    const v = findUseCssVars(value, varColor);
-    console.log(v);
-    if (v) {
-      varNames.push(name);
-      varColor[name] = v;
+  return varColor;
+}
+
+// 在文本中查找 var() 使用位置，只匹配已解析的颜色变量
+export function findCssVarsInText(text: string, varColor: Record<string, string>): ColorMatch[] {
+  const useVarRegex = /(?<=var\()(--[-\w]+)(?=\))/g;
+  const result: ColorMatch[] = [];
+  for (const match of text.matchAll(useVarRegex)) {
+    if (varColor[match[1]]) {
+      result.push({ start: match.index, end: match.index + match[0].length, color: varColor[match[1]] });
     }
-
-    match = defVarReg.exec(fullText);
   }
-
-  console.log(varNames);
-  
-  if (!varNames.length) {
-    return [];
-  }
-
-  const sortedVarNames = sortStringsInDescendingOrder(varNames);
-  const varNamesRegex = new RegExp(`var\\((${sortedVarNames.join('|')})\\)`, 'g');
-  match = varNamesRegex.exec(text);
-
-  while (match !== null) {
-    const start = match.index;
-    const end = varNamesRegex.lastIndex;
-    const varName = match[1];
-
-    console.log(varName);
-    
-    result.push({
-      start,
-      end,
-      color: varColor[varName],
-    });
-
-    match = varNamesRegex.exec(text);
-  }
-  console.log(result);
-  
   return result;
+}
+
+// 注入全局变量后解析并查找 var() 引用，只对原始文本做位置匹配
+export async function findCssVars(injectContent: string, text: string): Promise<ColorMatch[]> {
+  const fullText = injectContent + '\n' + text;
+  const varColor = await resolveCssVars(fullText);
+  if (!Object.keys(varColor).length) return [];
+  return findCssVarsInText(text, varColor);
 }

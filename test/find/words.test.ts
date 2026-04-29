@@ -1,4 +1,4 @@
-import { findWords } from '../src/find/words';
+import { findWords } from '@/find/words';
 
 describe('words', () => {
   describe('findWords', () => {
