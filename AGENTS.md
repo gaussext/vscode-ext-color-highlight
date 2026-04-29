@@ -1,29 +1,29 @@
 # AGENTS.md
 
-## Commands
+## 命令
 
-| Command | Description |
+| 命令 | 说明 |
 |---------|-------------|
-| `npm run build` | Development build (webpack) |
-| `npm run dev` | Watch mode (webpack -w) |
-| `npm run vscode:prepublish` | Production build |
-| `npm run package` | Create VSIX package via `vsce` |
+| `npm run build` | 开发构建 (webpack) |
+| `npm run dev` | 监听模式 (webpack -w) |
+| `npm run vscode:prepublish` | 生产构建 |
+| `npm run package` | 通过 `vsce` 创建 VSIX 包 |
 | `npm run lint` / `npm run lint:fix` | ESLint |
-| `npm run typecheck` | TypeScript type checking |
+| `npm run typecheck` | TypeScript 类型检查 |
 
-## Build Output
+## 构建输出
 
-- Entry: `src/main.ts`
-- Produces **two** bundles: `dist/extension-node.js` and `dist/extension-web.js` (webworker target)
-- Both are required by the extension (see `package.json` lines 39-40)
+- 入口：`src/main.ts`
+- 生成**两个**包：`dist/extension-node.js` 和 `dist/extension-web.js`（webworker 目标）
+- 插件需要两个包（参见 `package.json` 第 39-40 行）
 
-## No test suite
+## 无测试套件
 
-This repo has no tests. Don't look for test commands or test files.
+本仓库没有测试。不要查找测试命令或测试文件。
 
-## Notes
+## 说明
 
-- **TypeScript** with ES2019 target, webpack + ts-loader
-- `@types/vscode` pinned to `^1.57.0` for VS Code 1.57+ compatibility
-- ESLint upgraded to v8 + `@typescript-eslint/parser` for TypeScript support
-- No `declaration` output (bundled by webpack)
+- **TypeScript**，目标 ES2019，webpack + ts-loader
+- `@types/vscode` 锁定到 `^1.57.0`，兼容 VS Code 1.57+
+- ESLint 升级到 v8 + `@typescript-eslint/parser`，支持 TypeScript
+- 无 `declaration` 输出（由 webpack 打包）

@@ -6,6 +6,12 @@ const COMMAND_NAME = 'extension.colorHighlight';
 let instanceMap: DocumentHighlight[] = [];
 let config: vscode.WorkspaceConfiguration;
 
+function getUri(docOrInstance: vscode.TextDocument | DocumentHighlight): string {
+  return docOrInstance instanceof DocumentHighlight
+    ? docOrInstance.getDocument().uri.toString()
+    : docOrInstance.uri.toString();
+}
+
 export function activate(context: vscode.ExtensionContext): void {
   instanceMap = [];
   config = vscode.workspace.getConfiguration('color-highlight');
@@ -58,11 +64,13 @@ async function findOrCreateInstance(document: vscode.TextDocument): Promise<Docu
     return;
   }
 
-  const found = instanceMap.find((instance) => instance.getDocument() === document);
+  const docUri = getUri(document);
+  const found = instanceMap.find((instance) => getUri(instance) === docUri);
 
   if (!found) {
     const instance = new DocumentHighlight(document, config as unknown as ViewConfig);
     instanceMap.push(instance);
+    console.log(`[ColorHighlight] findOrCreateInstance NEW ${docUri}`);
     instance.onUpdate();
   }
 
@@ -97,11 +105,44 @@ function onConfigurationChange(): void {
 
 function onOpenEditor(editors: readonly vscode.TextEditor[]): void {
   const documents = editors.map(({ document }) => document);
-  const forDisposal = instanceMap.filter((instance) => documents.indexOf(instance.getDocument()) === -1);
+  const documentUris = documents.map(getUri);
 
-  instanceMap = instanceMap.filter((instance) => documents.indexOf(instance.getDocument()) > -1);
+  console.log(`[ColorHighlight] onOpenEditor START mapLen=${instanceMap.length} uris=${JSON.stringify(documentUris)}`);
+
+  instanceMap.forEach((inst, i) => {
+    console.log(`[ColorHighlight]   instanceMap[${i}] uri=${getUri(inst)} disposed=${inst['disposed']}`);
+  });
+
+  const forDisposal = instanceMap.filter(
+    (instance) => documentUris.indexOf(getUri(instance)) === -1
+  );
+  console.log(`[ColorHighlight]   forDisposal=${forDisposal.length}`);
+
+  instanceMap = instanceMap.filter(
+    (instance) => documentUris.indexOf(getUri(instance)) > -1
+  );
   forDisposal.forEach(instance => instance.dispose());
 
+  console.log(`[ColorHighlight]   after cleanup mapLen=${instanceMap.length}`);
+
   const validDocuments = documents.filter(doc => isValidDocument(config as unknown as ViewConfig, doc));
-  doHighlight(validDocuments);
+
+  const newDocuments = validDocuments.filter(doc => {
+    const docUri = getUri(doc);
+    const found = instanceMap.some(instance => {
+      const instUri = getUri(instance);
+      const match = instUri === docUri;
+      if (match) {
+        console.log(`[ColorHighlight]   MATCH: doc=${docUri} == inst=${instUri}`);
+      }
+      return match;
+    });
+    if (!found) {
+      console.log(`[ColorHighlight]   NEW DOC: ${docUri}`);
+    }
+    return !found;
+  });
+
+  console.log(`[ColorHighlight] onOpenEditor DONE editors=${editors.length} valid=${validDocuments.length} new=${newDocuments.length}`);
+  doHighlight(newDocuments);
 }

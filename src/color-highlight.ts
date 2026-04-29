@@ -23,6 +23,8 @@ export class DocumentHighlight {
   private decorations!: DecorationMap;
   private listener!: vscode.Disposable;
   private updateTimeout: ReturnType<typeof setTimeout> | undefined;
+  private lastUpdatedVersion: string | undefined;
+  private updatePromise: Promise<void> | undefined;
 
   public getDocument(): vscode.TextDocument {
     return this.document;
@@ -128,8 +130,10 @@ export class DocumentHighlight {
     const text = this.document.getText();
     const version = this.document.version.toString();
 
+    console.log(`[ColorHighlight] onDocumentChanged queued v${version}`);
     this.updateTimeout = setTimeout(() => {
       this.updateTimeout = undefined;
+      console.log(`[ColorHighlight] onDocumentChanged executing v${version}`);
       this.updateRange(text, version);
     }, 150);
   }
@@ -139,54 +143,83 @@ export class DocumentHighlight {
       return;
     }
 
-    const text = this.document.getText();
     const version = this.document.version.toString();
+    if (this.lastUpdatedVersion === version) {
+      console.log(`[ColorHighlight] onUpdate SKIP v${version} (already up-to-date)`);
+      return;
+    }
+
+    console.log(`[ColorHighlight] onUpdate -> updateRange v${version}`);
+    const text = this.document.getText();
 
     this.updateRange(text, version);
   }
 
   async updateRange(text: string, version: string): Promise<void> {
+    if (this.lastUpdatedVersion === version) {
+      console.log(`[ColorHighlight] updateRange SKIP v${version} (already applied)`);
+      return;
+    }
+
+    if (this.updatePromise) {
+      console.log(`[ColorHighlight] updateRange WAIT v${version} (lock)`);
+      await this.updatePromise;
+      const currentVersion = this.document.version.toString();
+      if (this.lastUpdatedVersion === currentVersion) {
+        console.log(`[ColorHighlight] updateRange SKIP after wait v${currentVersion}`);
+        return;
+      }
+    }
+
+    this.updatePromise = this.runUpdate(text, version);
+    await this.updatePromise;
+    this.updatePromise = undefined;
+  }
+
+  private async runUpdate(text: string, version: string): Promise<void> {
     try {
-      console.time('update')
-      const result = await Promise.all(this.strategies.map(fn => fn(text)));
-      console.timeEnd('upadte')
-      const actualVersion = this.document.version.toString();
-      if (actualVersion !== version) {
-        if (process.env.COLOR_HIGHLIGHT_DEBUG) {
-          throw new Error('Document version already has changed');
-        }
-        return;
-      }
+      const colorRanges = await this.getColorRanges(text, version);
+      if (!colorRanges || this.disposed) return;
 
-      const colorRanges = groupByColor(concatAll(result));
-
-      if (this.disposed) {
-        return;
-      }
-
-      const updateStack: Record<string, vscode.Range[]> = {};
-      this.decorations.keys().forEach(color => {
-        updateStack[color] = [];
-      });
-
-      for (const color in colorRanges) {
-        updateStack[color] = colorRanges[color].map(item => {
-          return new vscode.Range(
-            this.document.positionAt(item.start),
-            this.document.positionAt(item.end)
-          );
-        });
-      }
-
-      for (const color in updateStack) {
-        const decoration = this.decorations.get(color);
-
-        vscode.window.visibleTextEditors
-          .filter(({ document }) => document.uri === this.document.uri)
-          .forEach(editor => editor.setDecorations(decoration, updateStack[color]));
-      }
+      this.applyDecorations(colorRanges, version);
+      this.lastUpdatedVersion = version;
     } catch (error) {
       console.error(error);
+    }
+  }
+
+  private async getColorRanges(text: string, version: string): Promise<Record<string, ColorMatch[]> | undefined> {
+    const result = await Promise.all(this.strategies.map(fn => fn(text)));
+    const actualVersion = this.document.version.toString();
+    if (actualVersion !== version) {
+      console.log(`[ColorHighlight] getColorRanges DISCARD v${version} -> current v${actualVersion}`);
+      return;
+    }
+    return groupByColor(concatAll(result));
+  }
+
+  private applyDecorations(colorRanges: Record<string, ColorMatch[]>, version: string): void {
+    const updateStack: Record<string, vscode.Range[]> = {};
+    this.decorations.keys().forEach(color => {
+      updateStack[color] = [];
+    });
+
+    for (const color in colorRanges) {
+      updateStack[color] = colorRanges[color].map(item => {
+        return new vscode.Range(
+          this.document.positionAt(item.start),
+          this.document.positionAt(item.end)
+        );
+      });
+    }
+
+    console.log(`[ColorHighlight] APPLY decorations v${version} (${Object.keys(colorRanges).length} colors)`);
+    for (const color in updateStack) {
+      const decoration = this.decorations.get(color);
+
+      vscode.window.visibleTextEditors
+        .filter(({ document }) => document.uri === this.document.uri)
+        .forEach(editor => editor.setDecorations(decoration, updateStack[color]));
     }
   }
 
