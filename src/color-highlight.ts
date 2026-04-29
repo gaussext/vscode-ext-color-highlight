@@ -130,10 +130,8 @@ export class DocumentHighlight {
     const text = this.document.getText();
     const version = this.document.version.toString();
 
-    console.log(`[ColorHighlight] onDocumentChanged queued v${version}`);
     this.updateTimeout = setTimeout(() => {
       this.updateTimeout = undefined;
-      console.log(`[ColorHighlight] onDocumentChanged executing v${version}`);
       this.updateRange(text, version);
     }, 150);
   }
@@ -144,31 +142,19 @@ export class DocumentHighlight {
     }
 
     const version = this.document.version.toString();
-    if (this.lastUpdatedVersion === version) {
-      console.log(`[ColorHighlight] onUpdate SKIP v${version} (already up-to-date)`);
-      return;
-    }
+    if (this.lastUpdatedVersion === version) return;
 
-    console.log(`[ColorHighlight] onUpdate -> updateRange v${version}`);
     const text = this.document.getText();
 
     this.updateRange(text, version);
   }
 
   async updateRange(text: string, version: string): Promise<void> {
-    if (this.lastUpdatedVersion === version) {
-      console.log(`[ColorHighlight] updateRange SKIP v${version} (already applied)`);
-      return;
-    }
+    if (this.lastUpdatedVersion === version) return;
 
     if (this.updatePromise) {
-      console.log(`[ColorHighlight] updateRange WAIT v${version} (lock)`);
       await this.updatePromise;
-      const currentVersion = this.document.version.toString();
-      if (this.lastUpdatedVersion === currentVersion) {
-        console.log(`[ColorHighlight] updateRange SKIP after wait v${currentVersion}`);
-        return;
-      }
+      if (this.lastUpdatedVersion === this.document.version.toString()) return;
     }
 
     this.updatePromise = this.runUpdate(text, version);
@@ -191,10 +177,7 @@ export class DocumentHighlight {
   private async getColorRanges(text: string, version: string): Promise<Record<string, ColorMatch[]> | undefined> {
     const result = await Promise.all(this.strategies.map(fn => fn(text)));
     const actualVersion = this.document.version.toString();
-    if (actualVersion !== version) {
-      console.log(`[ColorHighlight] getColorRanges DISCARD v${version} -> current v${actualVersion}`);
-      return;
-    }
+    if (actualVersion !== version) return;
     return groupByColor(concatAll(result));
   }
 
@@ -213,7 +196,6 @@ export class DocumentHighlight {
       });
     }
 
-    console.log(`[ColorHighlight] APPLY decorations v${version} (${Object.keys(colorRanges).length} colors)`);
     for (const color in updateStack) {
       const decoration = this.decorations.get(color);
 
