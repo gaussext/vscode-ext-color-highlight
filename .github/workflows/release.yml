@@ -1,4 +1,4 @@
-name: Release
+name: Create Release
 
 on:
   push:
@@ -10,25 +10,22 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '20.14.0'
 
-      - run: npm install
-
-      - run: npm run vscode:prepublish
-
-      - run: npx vsce package
+      - name: Build artifacts
+        run: |
+          npm install
+          npm run package
 
       - name: Create Release
-        id: create_release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v1
         with:
-          files: '*.vsix'
-          generate_release_notes: true
-          draft: false
-          prerelease: ${{ contains(github.ref_name, '-') }}
-
+          files: |
+            *.vsix
