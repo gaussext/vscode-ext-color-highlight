@@ -10,8 +10,9 @@ async function findHex(text: string, useARGB: boolean): Promise<ColorMatch[]> {
   while (match !== null) {
     const prefix = match[0].slice(0, match[0].indexOf(match[1]));
     const matchedColor = match[1];
-    const start = match.index + prefix.length;
-    const end = start + matchedColor.length;
+    const colorPrefix = prefix.match(/([#]|0x)$/)?.[0] || '';
+    const start = match.index + prefix.length - colorPrefix.length;
+    const end = start + matchedColor.length + colorPrefix.length;
     const hexValue = '#' + matchedColor;
 
     try {
