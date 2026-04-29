@@ -1,4 +1,3 @@
-
 import { findWords } from '../find/words';
 import { findColorFunctionsInText } from '../find/functions';
 import { findHwb } from '../find/hwb';
@@ -31,10 +30,9 @@ function findUseLessVars(text: string, varColor: Record<string, string>, depth =
   return null;
 }
 
-export async function findLessVars(text: string): Promise<ColorMatch[]> {
+export async function resolveLessVars(text: string): Promise<Record<string, string>> {
   const lines = text.split('\n');
   const varColor: Record<string, string> = {};
-  const varNames: string[] = [];
   const seen = new Set<string>();
 
   for (const line of lines) {
@@ -47,22 +45,21 @@ export async function findLessVars(text: string): Promise<ColorMatch[]> {
 
     const directColor = await findColorValue(value);
     if (directColor) {
-      varNames.push(name);
       varColor[name] = directColor;
-    }
-
-    const refColor = findUseLessVars(value, varColor);
-    if (refColor && !directColor) {
-      varNames.push(name);
-      varColor[name] = refColor;
+    } else {
+      const refColor = findUseLessVars(value, varColor);
+      if (refColor) {
+        varColor[name] = refColor;
+      }
     }
   }
 
-  if (!varNames.length) {
-    return [];
-  }
+  return varColor;
+}
 
+export function findLessVarsInText(text: string, varColor: Record<string, string>): ColorMatch[] {
   const useVarRegex = /@([-\w]+)/;
+  const lines = text.split('\n');
   const result: ColorMatch[] = [];
   let lineStart = 0;
   for (const line of lines) {
@@ -78,4 +75,10 @@ export async function findLessVars(text: string): Promise<ColorMatch[]> {
   }
 
   return result;
+}
+
+export async function findLessVars(text: string): Promise<ColorMatch[]> {
+  const varColor = await resolveLessVars(text);
+  if (!Object.keys(varColor).length) return [];
+  return findLessVarsInText(text, varColor);
 }
