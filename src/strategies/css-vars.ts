@@ -1,4 +1,4 @@
-import { findHexRGBA, findHexRGB } from '../find/hex';
+import { findHex } from '../find/hex';
 import { findWords } from '../find/words';
 import { findColorFunctionsInText, sortStringsInDescendingOrder } from '../find/functions';
 import { findHwb } from '../find/hwb';
@@ -22,7 +22,7 @@ function findUseCssVars(text: string, varColor: Record<string, string>, depth = 
 }
 
 async function findColorValue(value: string): Promise<string | null> {
-  const finders = [findHexRGB, findHexRGBA, findWords, findColorFunctionsInText, findHwb];
+  const finders = [findHex, findWords, findColorFunctionsInText, findHwb];
   for (const finder of finders) {
     const result = await finder(value);
     if (result.length) {
@@ -54,20 +54,6 @@ export async function findCssVars(text: string): Promise<ColorMatch[]> {
 
     const refColor = findUseCssVars(value, varColor);
     if (refColor && !directColor) {
-      varNames.push(name);
-      varColor[name] = refColor;
-    }
-  }
-
-  for (const line of defLines) {
-    const matcher = line.match(defVarRegLine);
-    if (!matcher) continue;
-    const name = matcher[1];
-    const value = matcher[2];
-    if (varColor[name]) continue;
-
-    const refColor = findUseCssVars(value, varColor);
-    if (refColor) {
       varNames.push(name);
       varColor[name] = refColor;
     }
