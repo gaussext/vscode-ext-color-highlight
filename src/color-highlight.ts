@@ -81,10 +81,10 @@ export class DocumentHighlight {
       }
     }
     const injectContent = loadGlobalVariables({ globalPaths: viewConfig.globalPaths });
-    this.strategies.push(text => findCssVars(injectContent + '\n' + text));
-    this.strategies.push(text => findLessVars(injectContent + '\n' + text));
-    this.strategies.push(text =>findScssVars(injectContent + '\n' + text));
-    this.strategies.push(text => findStylVars(injectContent + '\n' + text));
+    this.strategies.push(text => findCssVars(injectContent, text));
+    this.strategies.push(text => findLessVars(injectContent, text));
+    this.strategies.push(text => findScssVars(injectContent, text));
+    this.strategies.push(text => findStylVars(injectContent, text));
 
     this.initialize(viewConfig);
   }

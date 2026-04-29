@@ -31,7 +31,7 @@ function findUseLessVars(text: string, varColor: Record<string, string>, depth =
 }
 
 export async function resolveLessVars(text: string): Promise<Record<string, string>> {
-  const lines = text.split('\n');
+  const lines = text.split(/\r?\n/);
   const varColor: Record<string, string> = {};
   const seen = new Set<string>();
 
@@ -59,30 +59,23 @@ export async function resolveLessVars(text: string): Promise<Record<string, stri
 }
 
 export function findLessVarsInText(text: string, varColor: Record<string, string>): ColorMatch[] {
-  const useVarRegex = /@([-\w]+)/;
-  const lines = text.split('\n');
+  const useVarRegex = /@([-\w]+)/g;
   const result: ColorMatch[] = [];
-  let lineStart = 0;
-  for (const line of lines) {
-    if (!defVarRegLine.test(line)) {
-      const match = line.match(useVarRegex);
-      if (match) {
-        const key = '@' + match[1];
-        if (varColor[key]) {
-          const start = lineStart + match.index!;
-          const end = start + match[0].length;
-          result.push({ start, end, color: varColor[key] });
-        }
-      }
-    }
-    lineStart += line.length + 1;
+  for (const match of text.matchAll(useVarRegex)) {
+    const key = '@' + match[1];
+    if (!varColor[key]) continue;
+    const lineStart = text.lastIndexOf('\n', match.index) + 1;
+    const lineEnd = text.indexOf('\n', match.index);
+    const line = text.slice(lineStart, lineEnd === -1 ? undefined : lineEnd);
+    if (defVarRegLine.test(line)) continue;
+    result.push({ start: match.index, end: match.index + match[0].length, color: varColor[key] });
   }
-
   return result;
 }
 
-export async function findLessVars(text: string): Promise<ColorMatch[]> {
-  const varColor = await resolveLessVars(text);
+export async function findLessVars(injectContent: string, text: string): Promise<ColorMatch[]> {
+  const fullText = injectContent + '\n' + text;
+  const varColor = await resolveLessVars(fullText);
   if (!Object.keys(varColor).length) return [];
   return findLessVarsInText(text, varColor);
 }

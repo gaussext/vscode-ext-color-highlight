@@ -2,8 +2,22 @@ import { resolveCssVars, findCssVarsInText } from '@/strategies/css-vars';
 
 describe('css-vars', () => {
   describe('resolveCssVars', () => {
+
     it('should resolve direct hex colors', async () => {
-      const varColor = await resolveCssVars('--primary: #ff0000;\n--secondary: #00ff00;\n.other { color: red; }');
+      const varColor = await resolveCssVars([
+        '--primary: #ff0000;',
+        '--secondary: #00ff00;'
+      ].join('\n'));
+      expect(varColor['--primary']).toBe('rgb(255, 0, 0)');
+      expect(varColor['--secondary']).toBe('rgb(0, 255, 0)');
+      expect(Object.keys(varColor)).toHaveLength(2);
+    });
+
+    it('should resolve direct hex colors', async () => {
+      const varColor = await resolveCssVars([
+        '--primary: #ff0000;',
+        '--secondary: #00ff00;'
+      ].join('\r\n'));
       expect(varColor['--primary']).toBe('rgb(255, 0, 0)');
       expect(varColor['--secondary']).toBe('rgb(0, 255, 0)');
       expect(Object.keys(varColor)).toHaveLength(2);

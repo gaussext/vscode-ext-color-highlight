@@ -31,7 +31,7 @@ function findUseStylVars(text: string, varColor: Record<string, string>, depth =
 }
 
 export async function resolveStylVars(text: string): Promise<Record<string, string>> {
-  const lines = text.split('\n');
+  const lines = text.split(/\r?\n/);
   const varColor: Record<string, string> = {};
   const seen = new Set<string>();
 
@@ -60,28 +60,23 @@ export async function resolveStylVars(text: string): Promise<Record<string, stri
 
 export function findStylVarsInText(text: string, varColor: Record<string, string>): ColorMatch[] {
   const sortedKeys = sortStringsInDescendingOrder(Object.keys(varColor));
-  const lines = text.split('\n');
   const result: ColorMatch[] = [];
-  let lineStart = 0;
-  for (const line of lines) {
-    for (const key of sortedKeys) {
-      const bareName = key.slice(1);
-      const match = line.match(new RegExp(`\\$?${bareName}(?!-|\\s*=)`));
-      if (match) {
-        const start = lineStart + match.index!;
-        const end = start + match[0].length;
-        result.push({ start, end, color: varColor[key] });
-        break;
-      }
+  const used = new Set<number>();
+  for (const key of sortedKeys) {
+    const bareName = key.slice(1);
+    const regex = new RegExp(`\\$?${bareName}(?!-|\\s*=)`, 'g');
+    for (const match of text.matchAll(regex)) {
+      if (used.has(match.index)) continue;
+      used.add(match.index);
+      result.push({ start: match.index, end: match.index + match[0].length, color: varColor[key] });
     }
-    lineStart += line.length + 1;
   }
-
   return result;
 }
 
-export async function findStylVars(text: string): Promise<ColorMatch[]> {
-  const varColor = await resolveStylVars(text);
+export async function findStylVars(injectContent: string, text: string): Promise<ColorMatch[]> {
+  const fullText = injectContent + '\n' + text;
+  const varColor = await resolveStylVars(fullText);
   if (!Object.keys(varColor).length) return [];
   return findStylVarsInText(text, varColor);
 }

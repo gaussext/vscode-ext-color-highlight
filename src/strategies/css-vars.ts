@@ -32,7 +32,7 @@ async function findColorValue(value: string): Promise<string | null> {
 }
 
 export async function resolveCssVars(text: string): Promise<Record<string, string>> {
-  const lines = text.split('\n');
+  const lines = text.split(/\r?\n/);
   const varColor: Record<string, string> = {};
   const seen = new Set<string>();
 
@@ -59,25 +59,19 @@ export async function resolveCssVars(text: string): Promise<Record<string, strin
 }
 
 export function findCssVarsInText(text: string, varColor: Record<string, string>): ColorMatch[] {
-  const useVarRegex = /(?<=var\()([-\w]+)(?=\))/;
-  const lines = text.split('\n');
+  const useVarRegex = /(?<=var\()(--[-\w]+)(?=\))/g;
   const result: ColorMatch[] = [];
-  let lineStart = 0;
-  for (const line of lines) {
-    const match = line.match(useVarRegex);
-    if (match && varColor[match[1]]) {
-      const start = lineStart + match.index!;
-      const end = start + match[0].length;
-      result.push({ start, end, color: varColor[match[1]] });
+  for (const match of text.matchAll(useVarRegex)) {
+    if (varColor[match[1]]) {
+      result.push({ start: match.index, end: match.index + match[0].length, color: varColor[match[1]] });
     }
-    lineStart += line.length + 1;
   }
-
   return result;
 }
 
-export async function findCssVars(text: string): Promise<ColorMatch[]> {
-  const varColor = await resolveCssVars(text);
+export async function findCssVars(injectContent: string, text: string): Promise<ColorMatch[]> {
+  const fullText = injectContent + '\n' + text;
+  const varColor = await resolveCssVars(fullText);
   if (!Object.keys(varColor).length) return [];
   return findCssVarsInText(text, varColor);
 }
