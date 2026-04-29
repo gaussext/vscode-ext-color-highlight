@@ -20,7 +20,7 @@ async function findColorValue(value: string): Promise<string | null> {
 function findUseStylVars(text: string, varColor: Record<string, string>, depth = 0): string | null {
   const match = text.match(/^\$?([-\w]+)$/);
   if (match) {
-    const varName = match[1];
+    const varName = '$' + match[1];
     if (varColor[varName]) {
       return varColor[varName];
     } else if (depth < 5) {
@@ -38,18 +38,19 @@ export async function resolveStylVars(text: string): Promise<Record<string, stri
   for (const line of lines) {
     const matcher = line.match(defVarRegLine);
     if (!matcher) continue;
-    const name = matcher[1];
+    const bareName = matcher[1];
+    const key = '$' + bareName;
     const value = matcher[2];
-    if (seen.has(name)) continue;
-    seen.add(name);
+    if (seen.has(bareName)) continue;
+    seen.add(bareName);
 
     const directColor = await findColorValue(value);
     if (directColor) {
-      varColor[name] = directColor;
+      varColor[key] = directColor;
     } else {
       const refColor = findUseStylVars(value, varColor);
       if (refColor) {
-        varColor[name] = refColor;
+        varColor[key] = refColor;
       }
     }
   }
@@ -58,17 +59,18 @@ export async function resolveStylVars(text: string): Promise<Record<string, stri
 }
 
 export function findStylVarsInText(text: string, varColor: Record<string, string>): ColorMatch[] {
-  const sortedVarNames = sortStringsInDescendingOrder(Object.keys(varColor));
+  const sortedKeys = sortStringsInDescendingOrder(Object.keys(varColor));
   const lines = text.split('\n');
   const result: ColorMatch[] = [];
   let lineStart = 0;
   for (const line of lines) {
-    for (const varName of sortedVarNames) {
-      const match = line.match(new RegExp(`\\$?${varName}(?!-|\\s*=)`));
+    for (const key of sortedKeys) {
+      const bareName = key.slice(1);
+      const match = line.match(new RegExp(`\\$?${bareName}(?!-|\\s*=)`));
       if (match) {
         const start = lineStart + match.index!;
         const end = start + match[0].length;
-        result.push({ start, end, color: varColor[varName] });
+        result.push({ start, end, color: varColor[key] });
         break;
       }
     }

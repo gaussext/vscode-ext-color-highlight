@@ -20,7 +20,7 @@ async function findColorValue(value: string): Promise<string | null> {
 function findUseScssVars(text: string, varColor: Record<string, string>, depth = 0): string | null {
   const match = text.match(/^\$([-\w]+)$/);
   if (match) {
-    const varName = match[1];
+    const varName = '$' + match[1];
     if (varColor[varName]) {
       return varColor[varName];
     } else if (depth < 5) {
@@ -38,18 +38,19 @@ export async function resolveScssVars(text: string): Promise<Record<string, stri
   for (const line of lines) {
     const matcher = line.match(defVarRegLine);
     if (!matcher) continue;
-    const name = matcher[1];
+    const bareName = matcher[1];
+    const key = '$' + bareName;
     const value = matcher[2];
-    if (seen.has(name)) continue;
-    seen.add(name);
+    if (seen.has(bareName)) continue;
+    seen.add(bareName);
 
     const directColor = await findColorValue(value);
     if (directColor) {
-      varColor[name] = directColor;
+      varColor[key] = directColor;
     } else {
       const refColor = findUseScssVars(value, varColor);
       if (refColor) {
-        varColor[name] = refColor;
+        varColor[key] = refColor;
       }
     }
   }
@@ -65,10 +66,13 @@ export function findScssVarsInText(text: string, varColor: Record<string, string
   for (const line of lines) {
     if (!defVarRegLine.test(line)) {
       const match = line.match(useVarRegex);
-      if (match && varColor[match[1]]) {
-        const start = lineStart + match.index!;
-        const end = start + match[0].length;
-        result.push({ start, end, color: varColor[match[1]] });
+      if (match) {
+        const key = '$' + match[1];
+        if (varColor[key]) {
+          const start = lineStart + match.index!;
+          const end = start + match[0].length;
+          result.push({ start, end, color: varColor[key] });
+        }
       }
     }
     lineStart += line.length + 1;
