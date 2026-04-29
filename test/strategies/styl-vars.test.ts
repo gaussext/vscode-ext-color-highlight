@@ -1,4 +1,4 @@
-import { findStylVars } from '../src/strategies/styl-vars';
+import { findStylVars } from '@/strategies/styl-vars';
 
 describe('styl-vars', () => {
   describe('findStylVars', () => {

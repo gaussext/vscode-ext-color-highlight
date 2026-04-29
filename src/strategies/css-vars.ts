@@ -4,7 +4,6 @@ import { findColorFunctionsInText, sortStringsInDescendingOrder } from '../find/
 import { findHwb } from '../find/hwb';
 import { ColorMatch } from '../types';
 
-const defVarRegGlobal = /^\s*(--[-\w]+)\s*:\s*(.*)$/gm;
 const defVarRegLine = /^\s*(--[-\w]+)\s*:\s*(.*)$/;
 const useVarRegLine = /var\((--[-\w]+)\)/;
 
@@ -33,12 +32,12 @@ async function findColorValue(value: string): Promise<string | null> {
 }
 
 export async function findCssVars(text: string): Promise<ColorMatch[]> {
-  const defLines = text.match(defVarRegGlobal) || [];
+  const lines = text.split('\n');
   const varColor: Record<string, string> = {};
   const varNames: string[] = [];
   const seen = new Set<string>();
 
-  for (const line of defLines) {
+  for (const line of lines) {
     const matcher = line.match(defVarRegLine);
     if (!matcher) continue;
     const name = matcher[1];
@@ -63,22 +62,17 @@ export async function findCssVars(text: string): Promise<ColorMatch[]> {
     return [];
   }
 
-  const sortedVarNames = sortStringsInDescendingOrder([...new Set(varNames)]);
-  const varNamesRegex = new RegExp(`var\\((${sortedVarNames.join('|')})\\)`, 'g');
-
-  const usages = text.match(varNamesRegex) || [];
+  const useVarRegex = /var\(([-\w]+)\)/;
   const result: ColorMatch[] = [];
-  let index = 0;
-  for (const usage of usages) {
-    const start = text.indexOf(usage, index);
-    const end = start + usage.length;
-    const varName = usage.slice(4, -1);
-    result.push({
-      start,
-      end,
-      color: varColor[varName],
-    });
-    index = end;
+  let lineStart = 0;
+  for (const line of lines) {
+    const match = line.match(useVarRegex);
+    if (match && varColor[match[1]]) {
+      const start = lineStart + match.index!;
+      const end = start + match[0].length;
+      result.push({ start, end, color: varColor[match[1]] });
+    }
+    lineStart += line.length + 1;
   }
 
   return result;

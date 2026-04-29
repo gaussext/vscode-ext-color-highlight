@@ -1,4 +1,4 @@
-import { findRgbNoFn } from '../src/find/rgbWithoutFunction';
+import { findRgbNoFn } from '@/find/rgbWithoutFunction';
 
 describe('rgbWithoutFunction', () => {
   describe('findRgbNoFn', () => {

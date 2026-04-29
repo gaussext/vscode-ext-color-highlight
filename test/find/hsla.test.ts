@@ -1,4 +1,4 @@
-import { findHsla } from '../src/find/hsla';
+import { findHsla } from '@/find/hsla';
 
 describe('hsla', () => {
   describe('findHsla', () => {

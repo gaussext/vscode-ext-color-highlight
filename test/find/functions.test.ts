@@ -1,4 +1,4 @@
-import { findColorFunctionsInText, sortStringsInDescendingOrder } from '../src/find/functions';
+import { findColorFunctionsInText, sortStringsInDescendingOrder } from '@/find/functions';
 
 describe('functions', () => {
   describe('findColorFunctionsInText', () => {

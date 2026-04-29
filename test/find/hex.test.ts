@@ -1,4 +1,4 @@
-import { findHex } from '../src/find/hex';
+import { findHex } from '@/find/hex';
 
 describe('hex', () => {
   describe('findHexA', () => {

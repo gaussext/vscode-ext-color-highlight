@@ -5,7 +5,6 @@ import { findHwb } from '../find/hwb';
 import { ColorMatch } from '../types';
 import { findHex } from '../find/hex';
 
-const setVariable = /^\s*@([-\w]+)\s*:\s*(.*)$/gm;
 const defVarRegLine = /^\s*@([-\w]+)\s*:\s*(.*)$/;
 
 async function findColorValue(value: string): Promise<string | null> {
@@ -33,12 +32,12 @@ function findUseLessVars(text: string, varColor: Record<string, string>, depth =
 }
 
 export async function findLessVars(text: string): Promise<ColorMatch[]> {
-  const defLines = text.match(setVariable) || [];
+  const lines = text.split('\n');
   const varColor: Record<string, string> = {};
   const varNames: string[] = [];
   const seen = new Set<string>();
 
-  for (const line of defLines) {
+  for (const line of lines) {
     const matcher = line.match(defVarRegLine);
     if (!matcher) continue;
     const name = matcher[1];
@@ -63,18 +62,19 @@ export async function findLessVars(text: string): Promise<ColorMatch[]> {
     return [];
   }
 
-  const sortedVarNames = sortStringsInDescendingOrder([...new Set(varNames)]);
-  const varNamesRegex = new RegExp(`\\@(${sortedVarNames.join('|')})(?!-|\\s*:)`, 'g');
-  let match = varNamesRegex.exec(text);
+  const useVarRegex = /@([-\w]+)/;
   const result: ColorMatch[] = [];
-
-  while (match !== null) {
-    const start = match.index;
-    const end = varNamesRegex.lastIndex;
-    const varName = match[1];
-
-    result.push({ start, end, color: varColor[varName] });
-    match = varNamesRegex.exec(text);
+  let lineStart = 0;
+  for (const line of lines) {
+    if (!defVarRegLine.test(line)) {
+      const match = line.match(useVarRegex);
+      if (match && varColor[match[1]]) {
+        const start = lineStart + match.index!;
+        const end = start + match[0].length;
+        result.push({ start, end, color: varColor[match[1]] });
+      }
+    }
+    lineStart += line.length + 1;
   }
 
   return result;

@@ -6,6 +6,7 @@ module.exports = {
   moduleFileExtensions: ['ts', 'js', 'json'],
   collectCoverageFrom: ['src/find/*.ts', 'src/strategies/*.ts', '!src/**/*.d.ts'],
   moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
     '^color-name$': '<rootDir>/node_modules/color-name',
     '^(\\.{1,2}/.*)\\.js$': '$1'
   }

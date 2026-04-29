@@ -1,4 +1,4 @@
-import { findCssVars } from '../src/strategies/css-vars';
+import { findCssVars } from '@/strategies/css-vars';
 
 describe('css-vars', () => {
   describe('findCssVars', () => {
@@ -119,6 +119,36 @@ describe('css-vars', () => {
 
       expect(result.length).toBeGreaterThanOrEqual(1);
       expect(elapsed).toBeLessThan(10000);
+    });
+
+    it('should perform well with 1000 definitions and 1000 references using random color functions', async () => {
+      const defs: string[] = [];
+      const refs: string[] = [];
+      const COUNT = 1000;
+      const colorFuncs = ['rgb', 'hsl', 'hwb'];
+
+      for (let i = 0; i < COUNT; i++) {
+        const func = colorFuncs[i % 3];
+        const r = () => Math.floor(Math.random() * 256);
+        const h = () => Math.floor(Math.random() * 361);
+        const p = () => Math.floor(Math.random() * 101);
+        const value = func === 'rgb'
+          ? `rgb(${r()}, ${r()}, ${r()})`
+          : func === 'hsl'
+            ? `hsl(${h()}, ${p()}%, ${p()}%)`
+            : `hwb(${h()}, ${p()}%, ${p()}%)`;
+        defs.push(`--var-${i}: ${value};`);
+        refs.push(`.ref-${i} { color: var(--var-${i}); }`);
+      }
+
+      const text = defs.join('\n') + '\n' + refs.join('\n');
+
+      const start = Date.now();
+      const result = await findCssVars(text);
+      const elapsed = Date.now() - start;
+
+      expect(result.length).toBe(COUNT);
+      expect(elapsed).toBeLessThan(30000);
     });
   });
 });

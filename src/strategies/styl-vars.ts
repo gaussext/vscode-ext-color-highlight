@@ -4,7 +4,6 @@ import { findHwb } from '../find/hwb';
 import { ColorMatch } from '../types';
 import { findHex } from '../find/hex';
 
-const setVariable = /^\s*\$?([-\w]+)\s*=\s*(.*)$/gm;
 const defVarRegLine = /^\s*\$?([-\w]+)\s*=\s*(.*)$/;
 
 async function findColorValue(value: string): Promise<string | null> {
@@ -32,12 +31,12 @@ function findUseStylVars(text: string, varColor: Record<string, string>, depth =
 }
 
 export async function findStylVars(text: string): Promise<ColorMatch[]> {
-  const defLines = text.match(setVariable) || [];
+  const lines = text.split('\n');
   const varColor: Record<string, string> = {};
   const varNames: string[] = [];
   const seen = new Set<string>();
 
-  for (const line of defLines) {
+  for (const line of lines) {
     const matcher = line.match(defVarRegLine);
     if (!matcher) continue;
     const name = matcher[1];
@@ -63,17 +62,21 @@ export async function findStylVars(text: string): Promise<ColorMatch[]> {
   }
 
   const sortedVarNames = sortStringsInDescendingOrder([...new Set(varNames)]);
-  const varNamesRegex = new RegExp(`\\$?(${sortedVarNames.join('|')})(?!-|\\s*=)`, 'g');
-  let match = varNamesRegex.exec(text);
   const result: ColorMatch[] = [];
-
-  while (match !== null) {
-    const start = match.index;
-    const end = varNamesRegex.lastIndex;
-    const varName = match[1];
-
-    result.push({ start, end, color: varColor[varName] });
-    match = varNamesRegex.exec(text);
+  let lineStart = 0;
+  for (const line of lines) {
+    if (!defVarRegLine.test(line)) {
+      for (const varName of sortedVarNames) {
+        const match = line.match(new RegExp(`\\$?${varName}(?!-|\\s*=)`));
+        if (match) {
+          const start = lineStart + match.index!;
+          const end = start + match[0].length;
+          result.push({ start, end, color: varColor[varName] });
+          break;
+        }
+      }
+    }
+    lineStart += line.length + 1;
   }
 
   return result;
