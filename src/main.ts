@@ -63,6 +63,7 @@ async function findOrCreateInstance(document: vscode.TextDocument): Promise<Docu
   if (!found) {
     const instance = new DocumentHighlight(document, config as unknown as ViewConfig);
     instanceMap.push(instance);
+    instance.onUpdate();
   }
 
   return found || instanceMap[instanceMap.length - 1];
@@ -77,13 +78,15 @@ async function runHighlightEditorCommand(
     document = editor && editor.document;
   }
 
-  return doHighlight([document]);
+  if (document) {
+    const instance = await findOrCreateInstance(document);
+    instance?.onUpdate();
+  }
 }
 
 async function doHighlight(documents: vscode.TextDocument[] = []): Promise<void> {
   if (documents.length) {
-    const instances = await Promise.all(documents.map(findOrCreateInstance));
-    instances.forEach(instance => instance && instance.onUpdate());
+    await Promise.all(documents.map(findOrCreateInstance));
   }
 }
 

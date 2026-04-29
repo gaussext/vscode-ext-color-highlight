@@ -22,6 +22,7 @@ export class DocumentHighlight {
   private strategies: Array<(text: string) => Promise<ColorMatch[]>>;
   private decorations!: DecorationMap;
   private listener!: vscode.Disposable;
+  private updateTimeout: ReturnType<typeof setTimeout> | undefined;
 
   public getDocument(): vscode.TextDocument {
     return this.document;
@@ -112,7 +113,25 @@ export class DocumentHighlight {
 
   private initialize(viewConfig: ViewConfig): void {
     this.decorations = new DecorationMap(viewConfig);
-    this.listener = vscode.workspace.onDidChangeTextDocument(({ document }) => this.onUpdate(document));
+    this.listener = vscode.workspace.onDidChangeTextDocument(({ document }) => this.onDocumentChanged(document));
+  }
+
+  private onDocumentChanged(document: vscode.TextDocument): void {
+    if (this.disposed || this.document.uri.toString() !== document.uri.toString()) {
+      return;
+    }
+
+    if (this.updateTimeout) {
+      clearTimeout(this.updateTimeout);
+    }
+
+    const text = this.document.getText();
+    const version = this.document.version.toString();
+
+    this.updateTimeout = setTimeout(() => {
+      this.updateTimeout = undefined;
+      this.updateRange(text, version);
+    }, 150);
   }
 
   onUpdate(document: vscode.TextDocument = this.document): void {
@@ -128,8 +147,9 @@ export class DocumentHighlight {
 
   async updateRange(text: string, version: string): Promise<void> {
     try {
+      console.time('update')
       const result = await Promise.all(this.strategies.map(fn => fn(text)));
-
+      console.timeEnd('upadte')
       const actualVersion = this.document.version.toString();
       if (actualVersion !== version) {
         if (process.env.COLOR_HIGHLIGHT_DEBUG) {
@@ -172,6 +192,12 @@ export class DocumentHighlight {
 
   dispose(): void {
     this.disposed = true;
+
+    if (this.updateTimeout) {
+      clearTimeout(this.updateTimeout);
+      this.updateTimeout = undefined;
+    }
+
     this.decorations.dispose();
     this.listener.dispose();
 
