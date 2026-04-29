@@ -13,7 +13,7 @@ import { DecorationMap } from './lib/decoration-map';
 import { ViewConfig, ColorMatch } from './types';
 import { loadGlobalVariables } from './importer/global-importer';
 
-const colorWordsLanguages = ['css', 'scss', 'sass', 'less', 'stylus'];
+const colorWordsLanguages = ['css', 'scss', 'sass', 'less', 'stylus', 'styl'];
 
 export class DocumentHighlight {
   private disposed = false;

@@ -35,23 +35,29 @@ describe('styl-vars', () => {
   describe('findStylVarsInText', () => {
     it('should find $var usages matching the given varColor', () => {
       const varColor = { '$z-primary': 'rgb(255, 0, 0)' };
-      const result = findStylVarsInText('.foo\n  color $z-primary', varColor);
+      const text = '.foo\n  color $z-primary';
+      const result = findStylVarsInText(text, varColor);
       expect(result).toHaveLength(1);
       expect(result[0].color).toBe('rgb(255, 0, 0)');
+      expect(text.slice(result[0].start, result[0].end)).toBe('$z-primary');
     });
 
     it('should find unprefixed var usages', () => {
       const varColor = { '$z-primary': 'rgb(255, 0, 0)' };
-      const result = findStylVarsInText('.foo\n  color z-primary', varColor);
+      const text = '.foo\n  color z-primary';
+      const result = findStylVarsInText(text, varColor);
       expect(result).toHaveLength(1);
       expect(result[0].color).toBe('rgb(255, 0, 0)');
+      expect(text.slice(result[0].start, result[0].end)).toBe('z-primary');
     });
 
     it('should find references on definition lines', () => {
       const varColor = { '$z-primary': 'rgb(255,0,0)', '$z-accent': 'rgb(0,255,0)' };
-      const result = findStylVarsInText('$z-accent = $z-primary', varColor);
+      const text = '$z-accent = $z-primary';
+      const result = findStylVarsInText(text, varColor);
       expect(result).toHaveLength(1);
       expect(result[0].color).toBe('rgb(255,0,0)');
+      expect(text.slice(result[0].start, result[0].end)).toBe('$z-primary');
     });
   });
 });

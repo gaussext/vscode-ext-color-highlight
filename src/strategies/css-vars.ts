@@ -7,6 +7,7 @@ import { ColorMatch } from '../types';
 const defVarRegLine = /^\s*(--[-\w]+)\s*:\s*(.*)$/;
 const useVarRegLine = /var\((--[-\w]+)\)/;
 
+// 递归查找 var() 引用，depth 防止循环引用
 function findUseCssVars(text: string, varColor: Record<string, string>, depth = 0): string | null {
   const match = text.match(useVarRegLine);
   if (match) {
@@ -31,6 +32,7 @@ async function findColorValue(value: string): Promise<string | null> {
   return null;
 }
 
+// 逐行解析 CSS 变量定义，解析为颜色值映射表
 export async function resolveCssVars(text: string): Promise<Record<string, string>> {
   const lines = text.split(/\r?\n/);
   const varColor: Record<string, string> = {};
@@ -44,6 +46,7 @@ export async function resolveCssVars(text: string): Promise<Record<string, strin
     if (seen.has(name)) continue;
     seen.add(name);
 
+    // 先尝试直接颜色值，再尝试 var() 引用
     const directColor = await findColorValue(value);
     if (directColor) {
       varColor[name] = directColor;
@@ -58,6 +61,7 @@ export async function resolveCssVars(text: string): Promise<Record<string, strin
   return varColor;
 }
 
+// 在文本中查找 var() 使用位置，只匹配已解析的颜色变量
 export function findCssVarsInText(text: string, varColor: Record<string, string>): ColorMatch[] {
   const useVarRegex = /(?<=var\()(--[-\w]+)(?=\))/g;
   const result: ColorMatch[] = [];
@@ -69,6 +73,7 @@ export function findCssVarsInText(text: string, varColor: Record<string, string>
   return result;
 }
 
+// 注入全局变量后解析并查找 var() 引用，只对原始文本做位置匹配
 export async function findCssVars(injectContent: string, text: string): Promise<ColorMatch[]> {
   const fullText = injectContent + '\n' + text;
   const varColor = await resolveCssVars(fullText);
