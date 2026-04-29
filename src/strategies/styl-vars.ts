@@ -30,10 +30,9 @@ function findUseStylVars(text: string, varColor: Record<string, string>, depth =
   return null;
 }
 
-export async function findStylVars(text: string): Promise<ColorMatch[]> {
+export async function resolveStylVars(text: string): Promise<Record<string, string>> {
   const lines = text.split('\n');
   const varColor: Record<string, string> = {};
-  const varNames: string[] = [];
   const seen = new Set<string>();
 
   for (const line of lines) {
@@ -46,22 +45,21 @@ export async function findStylVars(text: string): Promise<ColorMatch[]> {
 
     const directColor = await findColorValue(value);
     if (directColor) {
-      varNames.push(name);
       varColor[name] = directColor;
-    }
-
-    const refColor = findUseStylVars(value, varColor);
-    if (refColor && !directColor) {
-      varNames.push(name);
-      varColor[name] = refColor;
+    } else {
+      const refColor = findUseStylVars(value, varColor);
+      if (refColor) {
+        varColor[name] = refColor;
+      }
     }
   }
 
-  if (!varNames.length) {
-    return [];
-  }
+  return varColor;
+}
 
-  const sortedVarNames = sortStringsInDescendingOrder([...new Set(varNames)]);
+export function findStylVarsInText(text: string, varColor: Record<string, string>): ColorMatch[] {
+  const sortedVarNames = sortStringsInDescendingOrder(Object.keys(varColor));
+  const lines = text.split('\n');
   const result: ColorMatch[] = [];
   let lineStart = 0;
   for (const line of lines) {
@@ -78,4 +76,10 @@ export async function findStylVars(text: string): Promise<ColorMatch[]> {
   }
 
   return result;
+}
+
+export async function findStylVars(text: string): Promise<ColorMatch[]> {
+  const varColor = await resolveStylVars(text);
+  if (!Object.keys(varColor).length) return [];
+  return findStylVarsInText(text, varColor);
 }
