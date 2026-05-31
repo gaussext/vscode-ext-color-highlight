@@ -3,6 +3,7 @@ import { findScssVars } from './strategies/scss-vars';
 import { findLessVars } from './strategies/less-vars';
 import { findStylVars } from './strategies/styl-vars';
 import { findCssVars } from './strategies/css-vars';
+import { findNormalVars } from './strategies/normal-vars';
 import { findColorFunctionsInText } from './find/functions';
 import { findRgbNoFn } from './find/rgbWithoutFunction';
 import { findHslNoFn } from './find/hslWithoutFunction';
@@ -85,6 +86,7 @@ export class DocumentHighlight {
     this.strategies.push(text => findLessVars(injectContent, text));
     this.strategies.push(text => findScssVars(injectContent, text));
     this.strategies.push(text => findStylVars(injectContent, text));
+    this.strategies.push(text => findNormalVars(injectContent, text));
 
     this.initialize(viewConfig);
   }
