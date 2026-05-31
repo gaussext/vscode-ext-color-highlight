@@ -154,7 +154,9 @@ export class DocumentHighlight {
     const result = await Promise.all(this.strategies.map(fn => fn(text)));
     const actualVersion = this.document.version.toString();
     if (actualVersion !== version) return;
-    return groupByColor(concatAll(result));
+    const allMatches = concatAll(result);
+    const filtered = allMatches.filter(m => !isLeftOfColonOrEquals(text, m));
+    return groupByColor(filtered);
   }
 
   private applyDecorations(colorRanges: Record<string, ColorMatch[]>): void {
@@ -210,4 +212,19 @@ function groupByColor(results: ColorMatch[]): Record<string, ColorMatch[]> {
 
 function concatAll(arr: ColorMatch[][]): ColorMatch[] {
   return arr.reduce((result, item) => result.concat(item), []);
+}
+
+function isLeftOfColonOrEquals(text: string, match: ColorMatch): boolean {
+  const lineStart = text.lastIndexOf('\n', match.start) + 1;
+  const lineEnd = text.indexOf('\n', match.start);
+  const line = text.slice(lineStart, lineEnd === -1 ? undefined : lineEnd);
+  const matchCol = match.start - lineStart;
+
+  const colonIdx = line.indexOf(':');
+  if (colonIdx !== -1 && matchCol < colonIdx) return true;
+
+  const equalsIdx = line.indexOf('=');
+  if (equalsIdx !== -1 && matchCol < equalsIdx) return true;
+
+  return false;
 }
