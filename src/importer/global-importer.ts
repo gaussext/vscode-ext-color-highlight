@@ -9,7 +9,7 @@ export function loadGlobalVariables(options: { globalPaths?: string[] }): string
       const absolutePath = path.join(vscode.workspace.rootPath || '', item);
       if (fs.existsSync(absolutePath)) {
         const content = fs.readFileSync(absolutePath, 'utf-8');
-        result += content;
+        result += '\n' + content;
       } else {
         vscode.window.showErrorMessage(`Global file not found: ${absolutePath}`);
       }
